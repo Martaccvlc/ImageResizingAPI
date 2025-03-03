@@ -26,6 +26,9 @@
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository. API documentation can be found at /api/docs.
 
 ## Project setup
+First copy the .env.example file and make a dotenv in the root of the project. Fill in the environment variables and save the file.
+
+Then run:
 
 ```bash
 $ npm install
