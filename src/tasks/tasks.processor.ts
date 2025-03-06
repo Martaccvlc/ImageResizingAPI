@@ -12,7 +12,6 @@ import { ImageInfo, Task, TaskStatus } from './entities/task.entity';
 import { Image } from './entities/image.entity';
 import { calculateMD5, getFileExtension, ensureDirectoryExists } from '../utils/file.utils';
 
-// TODO: Fix processor
 
 @Injectable()
 export class TasksProcessor {
