@@ -15,7 +15,8 @@ describe('AppController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
   });
-
+  
+  // TODO: Do e2e tests for tasks endpoints
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')

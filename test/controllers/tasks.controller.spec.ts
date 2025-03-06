@@ -11,7 +11,7 @@ import {
 import { TasksService } from '../../src/tasks/tasks.service';
 import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
 import { TaskResponseDto } from '../../src/tasks/dto/task-response.dto';
-import { HttpExceptionFilter } from '../../src/utils/filters/httpExctions.filters';
+import { HttpExceptionFilter } from '../../src/utils/filters/httpExceptions.filters';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('tasks')
