@@ -15,7 +15,6 @@ import { TaskResponseDto } from './dto/task-response.dto';
 import { downloadImage, ensureDirectoryExists } from '../utils/file.utils';
 import { TasksProcessor } from './tasks.processor';
 
-// TODO: Fix service
 
 @Injectable()
 export class TasksService {
@@ -46,7 +45,7 @@ export class TasksService {
       
       if (createTaskDto.url) {
         // In case of an URL download the image
-        const inputDir = this.configService.get<string>('paths.input');
+        const inputDir = this.configService.get<string>('paths.input') ?? '/tmp/input';
         ensureDirectoryExists(inputDir);
         
         const fileName = `${uuidv4()}${path.extname(createTaskDto.url)}`;
@@ -59,7 +58,7 @@ export class TasksService {
         await downloadImage(createTaskDto.url, originalPath);
       } else {
         // If it is a local pagth check whether it exists or not
-        originalPath = createTaskDto.localPath;
+        originalPath = createTaskDto.localPath ?? '.';
         if (!fs.existsSync(originalPath)) {
           this.logger.error('File not found', { path: originalPath });
           throw new Error(`File ${originalPath} does not exist`);
@@ -74,12 +73,12 @@ export class TasksService {
       });
 
       this.logger.info('Task created successfully', { 
-        taskId: newTask._id.toString(),
+        taskId: newTask.id.toString(),
         price: newTask.price
       });
 
       // Start image processing
-      this.tasksProcessor.processTask(newTask._id.toString()).catch(error => {
+      this.tasksProcessor.processTask(newTask.id.toString()).catch(error => {
         this.logger.error(`Error processing task ${newTask._id}`, { 
           error: error.message,
           stack: error.stack
@@ -88,7 +87,7 @@ export class TasksService {
 
       // Return a response
       return {
-        taskId: newTask._id.toString(),
+        taskId: newTask.id.toString(),
         status: newTask.status,
         price: newTask.price,
       };
@@ -124,7 +123,7 @@ export class TasksService {
     });
 
     const response: TaskResponseDto = {
-      taskId: task._id.toString(),
+      taskId: task.id.toString(),
       status: task.status,
       price: task.price,
     };

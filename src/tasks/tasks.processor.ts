@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
-import { Task, TaskStatus } from './entities/task.entity';
+import { ImageInfo, Task, TaskStatus } from './entities/task.entity';
 import { Image } from './entities/image.entity';
 import { calculateMD5, getFileExtension, ensureDirectoryExists } from '../utils/file.utils';
 
@@ -48,7 +48,7 @@ export class TasksProcessor {
       });
 
       // Process images
-      const processedImages = [];
+      const processedImages: ImageInfo[] = [];
       
       for (const resolution of this.resolutions) {
         try {
@@ -94,12 +94,12 @@ export class TasksProcessor {
     }
   }
 
-  private async processImage(task: Task, originalPath: string, resolution: string): Promise<{ resolution: string; path: string }> {
-    const outputDir = this.configService.get<string>('paths.output');
+  private async processImage(task: Task, originalPath: string, resolution: string): Promise<ImageInfo> {
+    const outputDir = this.configService.get<string>('paths.output') ?? '/tmp/output';
     const originalFileName = path.basename(originalPath, getFileExtension(originalPath));
     
     // Calculate MD5 of original file
-    this.logger.debug('Calculating hash', { taskId: task._id, filePath: originalPath });
+    this.logger.debug('Calculating hash', { taskId: task.id, filePath: originalPath });
     const md5 = calculateMD5(originalPath);
     
     // Creating directory structure
@@ -129,7 +129,7 @@ export class TasksProcessor {
     const relativePath = `/output/${originalFileName}/${resolution}/${finalFileName}`;
     
     this.logger.debug('Saving image information in database...', {
-      taskId: task._id,
+      taskId: task.id,
       path: relativePath,
       resolution,
       md5
@@ -139,7 +139,7 @@ export class TasksProcessor {
       path: relativePath,
       resolution,
       md5,
-      taskId: task._id,
+      taskId: task.id,
     });
 
     return {
