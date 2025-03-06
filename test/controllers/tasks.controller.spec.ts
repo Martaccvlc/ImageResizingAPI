@@ -8,10 +8,10 @@ import {
   HttpStatus,
   UseFilters,
 } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { TaskResponseDto } from './dto/task-response.dto';
-import { HttpExceptionFilter } from '../utils/filters/httpExctions.filters';
+import { TasksService } from '../../src/tasks/tasks.service';
+import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
+import { TaskResponseDto } from '../../src/tasks/dto/task-response.dto';
+import { HttpExceptionFilter } from '../../src/utils/filters/httpExctions.filters';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('tasks')
@@ -21,31 +21,31 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Crear una nueva tarea de procesado de imagen' })
+  @ApiOperation({ summary: 'Create a new processing image Task.' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Tarea creada correctamente',
+    description: 'Task created successfully',
     type: TaskResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Datos no válidos',
+    description: 'Invalid data provided',
   })
   async create(@Body() createTaskDto: CreateTaskDto): Promise<TaskResponseDto> {
     return this.tasksService.create(createTaskDto);
   }
 
   @Get(':taskId')
-  @ApiOperation({ summary: 'Obtener información de una tarea específica' })
-  @ApiParam({ name: 'taskId', description: 'ID de la tarea' })
+  @ApiOperation({ summary: 'Get information about the specific task.' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Información de la tarea',
+    description: 'Task found',
     type: TaskResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
-    description: 'Tarea no encontrada',
+    description: 'Task not found',
   })
   async findOne(@Param('taskId') taskId: string): Promise<TaskResponseDto> {
     const task = await this.tasksService.findOne(taskId);
