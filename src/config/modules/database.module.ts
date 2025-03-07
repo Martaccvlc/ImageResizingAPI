@@ -12,7 +12,7 @@ const DATABASE_URL = process.env.DATABASE_URL as string;
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>(DATABASE_URL),
+        uri: configService.get<string>('DATABASE_URL'),
         useNewUrlParser: true,
         useUnifiedTopology: true,
       }),
