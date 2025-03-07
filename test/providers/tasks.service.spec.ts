@@ -2,17 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getModelToken } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Connection, connect, Model, Types } from 'mongoose';
+import { Connection, connect, Model, Types, Schema } from 'mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 import { TasksService } from '../../src/tasks/tasks.service';
 import { TasksProcessor } from '../../src/tasks/tasks.processor';
-import { Task, TaskStatus } from '../../src/tasks/entities/task.entity';
-import { Image } from '../../src/tasks/entities/image.entity';
+import { Task, TaskSchema, TaskStatus } from '../../src/tasks/entities/task.entity';
+import { Image, ImageSchema } from '../../src/tasks/entities/image.entity';
 import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
 
-// TODO: Fix test
 
 describe('TasksService', () => {
   let service: TasksService;
@@ -27,8 +27,8 @@ describe('TasksService', () => {
     mongod = await MongoMemoryServer.create();
     const uri = mongod.getUri();
     mongoConnection = (await connect(uri)).connection;
-    taskModel = mongoConnection.model(Task.name, mongoConnection.createSchema({}));
-    imageModel = mongoConnection.model(Image.name, mongoConnection.createSchema({}));
+    taskModel = mongoConnection.model(Task.name, TaskSchema);
+    imageModel = mongoConnection.model(Image.name, ImageSchema);
 
     // Crear directorios temporales para pruebas
     const testInputDir = './test-input';
@@ -84,6 +84,15 @@ describe('TasksService', () => {
             processTask: jest.fn().mockResolvedValue(undefined),
           },
         },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: {
+            info: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -102,7 +111,7 @@ describe('TasksService', () => {
   describe('create', () => {
     it('should create a task with local path', async () => {
       const createTaskDto: CreateTaskDto = {
-        localPath: '/test-input/test-image.jpg',
+        localPath: './test-input/test-image.jpg',
       };
 
       const result = await service.create(createTaskDto);
@@ -133,13 +142,15 @@ describe('TasksService', () => {
         ],
       });
 
-      const result = await service.findOne(task._id.toString());
+      // Use safe type assertion to handle _id
+      const taskId = task._id ? task._id.toString() : '';
+      const result = await service.findOne(taskId);
 
-      expect(result.taskId).toEqual(task._id.toString());
+      expect(result.taskId).toEqual(taskId);
       expect(result.status).toEqual(TaskStatus.COMPLETED);
       expect(result.price).toEqual(25.5);
       expect(result.images).toHaveLength(2);
-      expect(result.images[0].resolution).toEqual('1024');
+      expect(result.images && result.images[0].resolution).toEqual('1024');
     });
 
     it('should throw NotFoundException for non-existent task', async () => {
