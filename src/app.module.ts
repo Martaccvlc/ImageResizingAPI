@@ -8,21 +8,19 @@ import { HttpExceptionFilter } from './utils/filters/httpExceptions.filters';
 import { LoggerModule } from './config/modules/logging.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    LoggerModule,
-    DatabaseModule,
-    TasksModule,
-  ],
-  providers: [
-    {
-      provide: APP_FILTER,
-      useClass: HttpExceptionFilter,
-    },
-  ],
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+        }),
+        LoggerModule,
+        DatabaseModule,
+        TasksModule,
+    ],
+    providers: [
+        {
+            provide: APP_FILTER,
+            useClass: HttpExceptionFilter,
+        },
+    ],
 })
-
-export class AppModule {} 
-
+export class AppModule {}

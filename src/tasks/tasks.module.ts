@@ -10,15 +10,15 @@ import { Image, ImageSchema } from './entities/image.entity';
 import { LoggerModule } from '../config/modules/logging.module';
 
 @Module({
-  imports: [
-    ConfigModule,
-    LoggerModule,
-    MongooseModule.forFeature([
-      { name: Task.name, schema: TaskSchema },
-      { name: Image.name, schema: ImageSchema },
-    ]),
-  ],
-  controllers: [TasksController],
-  providers: [TasksService, TasksProcessor],
+    imports: [
+        ConfigModule,
+        LoggerModule,
+        MongooseModule.forFeature([
+            { name: Task.name, schema: TaskSchema },
+            { name: Image.name, schema: ImageSchema },
+        ]),
+    ],
+    controllers: [TasksController],
+    providers: [TasksService, TasksProcessor],
 })
-export class TasksModule {} 
+export class TasksModule {}
