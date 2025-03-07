@@ -6,7 +6,7 @@ import { TasksController } from '../../src/tasks/controllers/tasks.controller';
 import { TasksService } from '../../src/tasks/services/tasks.service';
 import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
 import { TaskResponseDto } from '../../src/tasks/dto/task-response.dto';
-import { TaskStatus } from '../../src/tasks/entities/task.entity';
+import { TaskStatus } from '../../src/tasks/enums/task-status.enum';
 import { HttpExceptionFilter } from '../../src/utils/filters/httpExceptions.filters';
 
 describe('TasksController', () => {

@@ -1,12 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
+import { TaskStatus } from '../enums/task-status.enum';
 
 // TODO: Move enums and interfaces to another folder
-export enum TaskStatus {
-    PENDING = 'pending',
-    COMPLETED = 'completed',
-    FAILED = 'failed',
-}
+
 
 export interface ImageInfo {
     resolution: string;

@@ -11,9 +11,9 @@ import { TasksService } from '../../src/tasks/services/tasks.service';
 import { TasksProcessor } from '../../src/tasks/services/tasks.processor';
 import {
     Task,
-    TaskSchema,
-    TaskStatus,
+    TaskSchema
 } from '../../src/tasks/entities/task.entity';
+import { TaskStatus } from '../../src/tasks/enums/task-status.enum';
 import { Image, ImageSchema } from '../../src/tasks/entities/image.entity';
 import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
 

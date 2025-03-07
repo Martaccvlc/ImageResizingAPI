@@ -8,7 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
-import { Task, TaskStatus } from '../entities/task.entity';
+import { Task } from '../entities/task.entity';
+import { TaskStatus } from '../enums/task-status.enum';
+
 import { Image } from '../entities/image.entity';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
