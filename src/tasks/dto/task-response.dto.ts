@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ImageInfo } from '../entities/task.entity';
+import { ImageInfo } from '../types/image-info.d';
 import { TaskStatus } from '../enums/task-status.enum';
 
 export class TaskResponseDto {

@@ -8,7 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
-import { ImageInfo, Task } from '../entities/task.entity';
+import { Task } from '../entities/task.entity';
+import { ImageInfo } from '../types/image-info.d';
 import { TaskStatus } from '../enums/task-status.enum';
 import { Image } from '../entities/image.entity';
 import {
