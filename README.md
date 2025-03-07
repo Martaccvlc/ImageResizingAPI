@@ -122,7 +122,8 @@ The tests use:
 
 ## Project Structure
 
-TODO: This will be tweaked in another branch to improve the architecture. There are some TODOs in the code specifying some of the parts which need a rework.
+TODO: This will be tweaked in another branch to improve the architecture. There are some TODOs in the code specifying some of the parts which need a rework. - The project will use hexagonal architecture
+Why? I was making my first steps in nest and now that I have more or less clear how the framework works it is time to refactor the code.
 
 ## Error Handling
 
