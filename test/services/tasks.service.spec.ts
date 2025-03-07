@@ -7,8 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
-import { TasksService } from '../../src/tasks/tasks.service';
-import { TasksProcessor } from '../../src/tasks/tasks.processor';
+import { TasksService } from '../../src/tasks/services/tasks.service';
+import { TasksProcessor } from '../../src/tasks/services/tasks.processor';
 import {
     Task,
     TaskSchema,

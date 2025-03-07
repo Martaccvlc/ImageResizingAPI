@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
-import { TasksController } from '../../src/tasks/tasks.controller';
-import { TasksService } from '../../src/tasks/tasks.service';
+import { TasksController } from '../../src/tasks/controllers/tasks.controller';
+import { TasksService } from '../../src/tasks/services/tasks.service';
 import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
 import { TaskResponseDto } from '../../src/tasks/dto/task-response.dto';
 import { TaskStatus } from '../../src/tasks/entities/task.entity';

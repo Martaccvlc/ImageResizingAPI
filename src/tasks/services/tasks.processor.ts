@@ -8,13 +8,13 @@ import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
-import { ImageInfo, Task, TaskStatus } from './entities/task.entity';
-import { Image } from './entities/image.entity';
+import { ImageInfo, Task, TaskStatus } from '../entities/task.entity';
+import { Image } from '../entities/image.entity';
 import {
     calculateMD5,
     getFileExtension,
     ensureDirectoryExists,
-} from '../utils/file.utils';
+} from '../../utils/files/file.utils';
 
 @Injectable()
 export class TasksProcessor {

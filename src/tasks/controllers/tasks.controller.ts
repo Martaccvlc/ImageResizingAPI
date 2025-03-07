@@ -8,10 +8,10 @@ import {
     HttpStatus,
     UseFilters,
 } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { TaskResponseDto } from './dto/task-response.dto';
-import { HttpExceptionFilter } from '../utils/filters/httpExceptions.filters';
+import { TasksService } from '../services/tasks.service';
+import { CreateTaskDto } from '../dto/create-task.dto';
+import { TaskResponseDto } from '../dto/task-response.dto';
+import { HttpExceptionFilter } from '../../utils/filters/httpExceptions.filters';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('tasks')
