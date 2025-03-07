@@ -30,7 +30,7 @@ describe('TasksService', () => {
     taskModel = mongoConnection.model(Task.name, TaskSchema);
     imageModel = mongoConnection.model(Image.name, ImageSchema);
 
-    // Crear directorios temporales para pruebas
+    // Creating temporary dicts for test input and output
     const testInputDir = './test-input';
     const testOutputDir = './test-output';
     
@@ -42,7 +42,7 @@ describe('TasksService', () => {
       fs.mkdirSync(testOutputDir, { recursive: true });
     }
 
-    // Crear una imagen de prueba
+    // Creating a new image for the test
     const sampleImageBuffer = Buffer.alloc(1024, 0);
     fs.writeFileSync(path.join(testInputDir, 'test-image.jpg'), sampleImageBuffer);
   });
@@ -51,7 +51,7 @@ describe('TasksService', () => {
     await mongoConnection.close();
     await mongod.stop();
     
-    // Limpiar directorios de prueba
+    // Cleanining dicts for test input and output
     fs.rmSync('./test-input', { recursive: true, force: true });
     fs.rmSync('./test-output', { recursive: true, force: true });
   });
