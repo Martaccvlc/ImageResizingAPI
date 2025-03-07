@@ -6,7 +6,7 @@ A NestJS application that provides a REST API for image resizing and processing.
 
 ```bash
 # Clone the repository
-git clone https://your-repository-url/ImageResizingAPI.git
+git clone https://github.com/Martaccvlc/ImageResizingAPI.git
 cd ImageResizingAPI
 
 # Install dependencies
