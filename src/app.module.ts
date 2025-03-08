@@ -4,7 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 
 import { DatabaseModule } from './core/database/database.module';
 import { TasksModule } from './tasks/modules/tasks.module';
-import { HttpExceptionFilter } from './utils/filters/httpExceptions.filters';
+import { HttpExceptionFilter } from './core/filters/httpExceptions.filters';
 import { LoggerModule } from './core/logging/logging.module';
 
 @Module({

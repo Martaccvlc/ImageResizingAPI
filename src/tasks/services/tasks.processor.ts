@@ -9,8 +9,8 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
 import { Task } from '../entities/task.entity';
-import { ImageInfo } from '../types/image-info.d';
-import { TaskStatus } from '../enums/task-status.enum';
+import { ImageInfo } from '../../types/tasks/image-info';
+import { TaskStatus } from '../../utils/enums/tasks/task-status.enum';
 import { Image } from '../entities/image.entity';
 import {
     calculateMD5,

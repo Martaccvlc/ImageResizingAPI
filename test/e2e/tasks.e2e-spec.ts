@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AppModule } from '../../src/app.module';
-import { TaskStatus } from '../../src/tasks/enums/task-status.enum';
+import { TaskStatus } from '../../src/utils/enums/tasks/task-status.enum';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection, connect } from 'mongoose';
 

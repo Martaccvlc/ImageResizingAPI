@@ -13,7 +13,7 @@ import {
     Task,
     TaskSchema
 } from '../../src/tasks/entities/task.entity';
-import { TaskStatus } from '../../src/tasks/enums/task-status.enum';
+import { TaskStatus } from '../../src/utils/enums/tasks/task-status.enum';
 import { Image, ImageSchema } from '../../src/tasks/entities/image.entity';
 import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
 

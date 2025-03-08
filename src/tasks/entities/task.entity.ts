@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-import { TaskStatus } from '../enums/task-status.enum';
-import { ImageInfo } from '../types/image-info.d';
+import { TaskStatus } from '../../utils/enums/tasks/task-status.enum';
+import { ImageInfo } from '../../types/tasks/image-info';
 
 
 @Schema({ timestamps: true })
