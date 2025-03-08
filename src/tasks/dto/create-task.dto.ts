@@ -1,23 +1,25 @@
 import { IsString, IsUrl, IsOptional, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+import { fileErrorResponseMessages, fileExampleData, fileSwaggerSummaries } from '../../utils/constants/files/files-messages.constant';
+
 export class CreateTaskDto {
     @ApiProperty({
-        description: 'Local path or URL of the original image',
-        example: 'https://example.com/images/sample.jpg',
+        description: fileSwaggerSummaries.FILE_URL_SUMMARY,
+        example: fileExampleData.URL,
     })
     @IsOptional()
-    @IsUrl({}, { message: 'Malformed URL' })
+    @IsUrl({}, { message: fileErrorResponseMessages.MALFORMED_URL })
     url?: string;
 
     @ApiProperty({
-        description: 'Local path of the image',
-        example: '/input/sample.jpg',
+        description: fileSwaggerSummaries.LOCAL_PATH_SUMMARY,
+        example: fileExampleData.LOCAL_PATH,
     })
     @IsOptional()
     @IsString()
     @Matches(/^\/.*\.(jpg|jpeg|png|gif)$/i, {
-        message: 'The path must start with / and have a valid image extension',
+        message: fileErrorResponseMessages.INVALID_FILE_EXT,
     })
     localPath?: string;
 }

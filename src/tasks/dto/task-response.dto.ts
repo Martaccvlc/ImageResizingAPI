@@ -1,34 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import { ImageInfo } from '../../types/tasks/image-info';
 import { TaskStatus } from '../../utils/enums/tasks/task-status.enum';
+import { fileErrorResponseMessages, fileExampleData, fileSwaggerSummaries } from '../../utils/constants/files/files-messages.constant';
+import { taskSwaggerSummaries, taskExampleMessages } from 'src/utils/constants/tasks/task-messages.constants';
 
 export class TaskResponseDto {
     @ApiProperty({
-        description: 'Task ID',
-        example: '65d4a54b89c5e342b2c2c5f6',
+        description: taskSwaggerSummaries.TASK_ID_SUMMARY,
+        example: taskExampleMessages.TASK_EXAMPLE_ID,
     })
     taskId: string;
 
     @ApiProperty({
-        description: 'Task status: pending, completed, failed',
+        description: taskSwaggerSummaries.TASK_STATUS_INFO_SUMMARY,
         enum: TaskStatus,
         example: TaskStatus.PENDING,
     })
     status: TaskStatus;
 
     @ApiProperty({
-        description: 'Price of the processed image',
-        example: 25.5,
+        description: fileSwaggerSummaries.IMAGE_PRICE_SUMMARY,
+        example: fileExampleData.EXAMPLE_PRICE,
     })
     price: number;
 
     @ApiProperty({
-        description: 'Information about the original image',
+        description: fileSwaggerSummaries.IMAGE_INFO_SUMMARY,
         type: [Object],
         example: [
             {
-                resolution: '1024',
-                path: '/output/image1/1024/f322b730b287da77e1c519c7ffef4fc2.jpg',
+                resolution: fileExampleData.EXAMPLE_RESOLUTION,
+                path: fileExampleData.EXAMPLE_FULL_OUTPUT_PATH,
             },
         ],
         required: false,
@@ -36,9 +39,9 @@ export class TaskResponseDto {
     images?: ImageInfo[];
 
     @ApiProperty({
-        description: 'Failure message',
+        description: fileSwaggerSummaries.FAILURE_INFO_SUMMARY,
         required: false,
-        example: 'Failed to process the image',
+        example: fileErrorResponseMessages.FAILED_TO_PROCESS_IMAGE,
     })
     errorMessage?: string;
 }

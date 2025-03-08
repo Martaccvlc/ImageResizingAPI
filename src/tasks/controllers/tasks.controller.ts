@@ -8,11 +8,14 @@ import {
     HttpStatus,
     UseFilters,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+
 import { TasksService } from '../services/tasks.service';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
 import { HttpExceptionFilter } from '../../core/filters/httpExceptions.filters';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { taskResponseMessages, taskSwaggerSummaries } from '../../utils/constants/tasks/messages.constants';
+
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -21,15 +24,15 @@ export class TasksController {
     constructor(private readonly tasksService: TasksService) {}
 
     @Post()
-    @ApiOperation({ summary: 'Crear una nueva tarea de procesado de imagen' })
+    @ApiOperation({ summary: taskSwaggerSummaries.TASK_CREATION_SUMMARY })
     @ApiResponse({
         status: HttpStatus.CREATED,
-        description: 'Tarea creada correctamente',
+        description: taskResponseMessages.CREATED,
         type: TaskResponseDto,
     })
     @ApiResponse({
         status: HttpStatus.BAD_REQUEST,
-        description: 'Datos no válidos',
+        description: taskResponseMessages.BAD_REQUEST,
     })
     async create(
         @Body() createTaskDto: CreateTaskDto,
@@ -38,21 +41,21 @@ export class TasksController {
     }
 
     @Get(':taskId')
-    @ApiOperation({ summary: 'Obtener información de una tarea específica' })
-    @ApiParam({ name: 'taskId', description: 'ID de la tarea' })
+    @ApiOperation({ summary: taskSwaggerSummaries.TASK_INFO_SUMMARY })
+    @ApiParam({ name: 'taskId', description: 'Task ID' })
     @ApiResponse({
         status: HttpStatus.OK,
-        description: 'Información de la tarea',
+        description: taskResponseMessages.FOUND,
         type: TaskResponseDto,
     })
     @ApiResponse({
         status: HttpStatus.NOT_FOUND,
-        description: 'Tarea no encontrada',
+        description: taskResponseMessages.NOT_FOUND,
     })
     async findOne(@Param('taskId') taskId: string): Promise<TaskResponseDto> {
         const task = await this.tasksService.findOne(taskId);
         if (!task) {
-            throw new NotFoundException(`Task with ID ${taskId} not found`);
+            throw new NotFoundException(`${taskResponseMessages.NOT_FOUND}: ${taskId}`);
         }
         return task;
     }

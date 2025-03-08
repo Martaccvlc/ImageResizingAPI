@@ -17,6 +17,7 @@ import {
     getFileExtension,
     ensureDirectoryExists,
 } from '../../utils/files/file.utils';
+import { taskResponseMessages } from '../../utils/constants/tasks/task-messages.constants';
 
 @Injectable()
 export class TasksProcessor {
@@ -36,7 +37,7 @@ export class TasksProcessor {
             // Get task
             const task = await this.taskModel.findById(taskId);
             if (!task) {
-                throw new Error(`Task ${taskId} not found`);
+                throw new Error(`${taskResponseMessages.NOT_FOUND}: ${taskId}`);
             }
 
             // Get original image
