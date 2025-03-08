@@ -5,6 +5,7 @@ export const fileErrorResponseMessages = {
     MALFORMED_URL: 'Malformed URL',
     INVALID_FILE_EXT: 'The path must start with / and have a valid image extension',
     FAILED_TO_PROCESS_IMAGE: 'Failed to process image',
+    FILE_NOT_FOUND: 'File not found'
   };
 
 /**
