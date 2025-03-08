@@ -120,28 +120,65 @@ The tests use:
 - Mocked services for isolated testing
 
 
-## Project Structure
+## Architecture
 
-TODO: This will be tweaked in another branch to improve the architecture. There are some TODOs in the code specifying some of the parts which need a rework.
+The project follows NestJS's module-based structure. 
 
-## Error Handling
+### Technical Stack
 
-The API implements comprehensive error handling:
+- **Framework**: NestJS v11
+- **Database**: MongoDB v8 with Mongoose
+- **Image Processing**: Sharp v0.33
+- **Logging**: nest-winston
+- **API Documentation**: Swagger/OpenAPI
+- **Testing**: Jest with MongoDB Memory Server
+- **Configuration**: Environment-based using @nestjs/config
 
-- HTTP exceptions with appropriate status codes
-- Detailed error messages
-- Error logging with stack traces
-- Custom exception filters
+### Project Structure
 
-## Logging
+```
+src/
+├── core/                # Core modules and utilities
+│   ├── database/        # Database configuration
+│   ├── logging/         # Logging setup
+│   └── filters/         # Global exception filters
+├── tasks/               # Tasks module
+│   ├── controllers/     # API endpoints
+│   ├── services/        # Business logic
+│   ├── entities/        # Database models
+│   └── dto/             # Data transfer objects
+├── utils/               # Shared utilities
+│   ├── constants/       # Application constants
+│   ├── enums/           # Shared enumerations
+│   └── files/           # File handling utilities
+└── types/               # TypeScript interfaces
+```
 
-The application uses Winston for logging with multiple log levels:
-- ERROR: For critical errors
-- WARN: For warning conditions
-- INFO: For informational messages
-- DEBUG: For detailed debug information
-- VERBOSE: For highly detailed traces
+### Core Components
 
-Once the app has been started, the log files can be found in the generated log folder:
-- combined.log: Logs everything happening in the app.
-- error.log: Shows only the errors.
+1. **Application Module (`AppModule`)**
+   - Root module that bootstraps the application
+   - Configures global settings and imports core modules
+   - Implements global exception handling
+
+2. **Database Module (`DatabaseModule`)**
+   - Manages MongoDB connection using Mongoose
+   - Configures database settings through environment variables
+   - Implements connection pooling and error handling
+
+3. **Logger Module (`LoggerModule`)**
+   - Implements Winston logger for structured logging
+   - Supports multiple transport layers (console, file)
+   - Provides different log levels based on environment
+   - Outputs to:
+     - Console (development)
+     - combined.log (all levels)
+     - error.log (error level only)
+
+4. **Tasks Module (`TasksModule`)**
+   - Core business logic for image processing
+   - Components:
+     - `TasksController`: REST API endpoints
+     - `TasksService`: Business logic and task management
+     - `TasksProcessor`: Image processing using Sharp
+     - MongoDB schemas for Tasks and Images
