@@ -1,7 +1,7 @@
 import { IsString, IsUrl, IsOptional, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-import { fileErrorResponseMessages, fileExampleData, fileSwaggerSummaries } from '../../utils/constants/files/files-messages.constant';
+import { fileErrorResponseMessages, fileExampleData, fileSwaggerSummaries } from '../../utils/constants/files/files-messages.constants';
 
 export class CreateTaskDto {
     @ApiProperty({

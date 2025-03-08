@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { ImageInfo } from '../../types/tasks/image-info';
 import { TaskStatus } from '../../utils/enums/tasks/task-status.enum';
-import { fileErrorResponseMessages, fileExampleData, fileSwaggerSummaries } from '../../utils/constants/files/files-messages.constant';
+import { fileErrorResponseMessages, fileExampleData, fileSwaggerSummaries } from '../../utils/constants/files/files-messages.constants';
 import { taskSwaggerSummaries, taskExampleMessages } from 'src/utils/constants/tasks/task-messages.constants';
 
 export class TaskResponseDto {

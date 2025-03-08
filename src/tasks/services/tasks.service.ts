@@ -17,7 +17,7 @@ import { TaskResponseDto } from '../dto/task-response.dto';
 import { downloadImage, ensureDirectoryExists } from '../../utils/files/file.utils';
 import { TasksProcessor } from './tasks.processor';
 import { taskResponseErrorMessages, taskInfoMessages } from '../../utils/constants/tasks/task-messages.constants';
-import { fileErrorResponseMessages } from 'src/utils/constants/files/files-messages.constant';
+import { fileErrorResponseMessages } from 'src/utils/constants/files/files-messages.constants';
 import { taskProcessingErrorMessages } from 'src/utils/constants/tasks/task-processing-messages.constants';
 
 @Injectable()
