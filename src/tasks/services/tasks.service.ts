@@ -16,6 +16,9 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
 import { downloadImage, ensureDirectoryExists } from '../../utils/files/file.utils';
 import { TasksProcessor } from './tasks.processor';
+import { taskResponseErrorMessages, taskInfoMessages } from '../../utils/constants/tasks/task-messages.constants';
+import { fileErrorResponseMessages } from 'src/utils/constants/files/files-messages.constant';
+import { taskProcessingErrorMessages } from 'src/utils/constants/tasks/task-processing-messages.constants';
 
 @Injectable()
 export class TasksService {
@@ -31,10 +34,10 @@ export class TasksService {
         try {
             // Check if URL or local path is provided
             if (!createTaskDto.url && !createTaskDto.localPath) {
-                throw new Error('URL or local image path needed'); // TODO: Error messages should be moved to a constant file
+                throw new Error(taskResponseErrorMessages.MISSING_PATH);
             }
 
-            this.logger.info('Creating a new processing task', {
+            this.logger.info(taskInfoMessages.CREATING, {
                 dto: createTaskDto,
             });
 
@@ -53,7 +56,7 @@ export class TasksService {
                 const fileName = `${uuidv4()}${path.extname(createTaskDto.url)}`;
                 originalPath = path.join(inputDir, fileName);
 
-                this.logger.debug('Downloading image of URL', {
+                this.logger.debug(taskInfoMessages.DOWNLOADING_IMAGE, {
                     url: createTaskDto.url,
                     destination: originalPath,
                 });
@@ -62,8 +65,9 @@ export class TasksService {
                 // If it is a local pagth check whether it exists or not
                 originalPath = createTaskDto.localPath ?? '.';
                 if (!fs.existsSync(originalPath)) {
-                    this.logger.error('File not found', { path: originalPath });
-                    throw new Error(`File ${originalPath} does not exist`);
+                    const error = `${fileErrorResponseMessages.FILE_NOT_FOUND}: ${ originalPath }`;
+                    this.logger.error(error);
+                    throw new Error(error);
                 }
             }
 
@@ -74,7 +78,7 @@ export class TasksService {
                 originalPath,
             });
 
-            this.logger.info('Task created successfully', {
+            this.logger.info(taskInfoMessages.CREATED, {
                 taskId: newTask.id.toString(),
                 price: newTask.price,
             });
@@ -83,7 +87,7 @@ export class TasksService {
             this.tasksProcessor
                 .processTask(newTask.id.toString())
                 .catch((error) => {
-                    this.logger.error(`Error processing task ${newTask._id}`, {
+                    this.logger.error(`${taskProcessingErrorMessages.PROCESSING_ERROR} ${newTask._id}`, {
                         error: error.message,
                         stack: error.stack,
                     });
@@ -96,7 +100,7 @@ export class TasksService {
                 price: newTask.price,
             };
         } catch (error) {
-            this.logger.error('Error creating task', {
+            this.logger.error(taskResponseErrorMessages.ERROR_CREATING_TASK, {
                 error: error.message,
                 stack: error.stack,
                 dto: createTaskDto,
@@ -106,21 +110,21 @@ export class TasksService {
     }
 
     async findOne(taskId: string): Promise<TaskResponseDto> {
-        this.logger.debug('Searching for task', { taskId });
+        this.logger.debug(taskInfoMessages.SEARCHING_TASK, { taskId });
 
         if (!Types.ObjectId.isValid(taskId)) {
-            this.logger.warn('Invalid Task ID', { taskId });
-            throw new NotFoundException(`Invalid task ID: ${taskId}`);
+            this.logger.warn(taskResponseErrorMessages.INVALID_TASK_ID, { taskId });
+            throw new NotFoundException(`${taskResponseErrorMessages.INVALID_TASK_ID}: ${taskId}`);
         }
 
         const task = await this.taskModel.findById(taskId);
 
         if (!task) {
-            this.logger.warn('Task not found', { taskId });
-            throw new NotFoundException(`Task with ID ${taskId} not found`);
+            this.logger.warn(`${taskResponseErrorMessages.NOT_FOUND}, ${ taskId }`);
+            throw new NotFoundException(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
         }
 
-        this.logger.debug('Tarea encontrada', {
+        this.logger.debug(taskInfoMessages.FOUND, {
             taskId,
             status: task.status,
             imagesCount: task.images?.length || 0,
@@ -132,12 +136,12 @@ export class TasksService {
             price: task.price,
         };
 
-        // If task is process include images
+        // If task is processed include images
         if (task.status === TaskStatus.COMPLETED) {
             response.images = task.images;
         }
 
-        // If teh task failed include error message
+        // If the task failed include error message
         if (task.status === TaskStatus.FAILED) {
             response.errorMessage = task.errorMessage;
         }
@@ -151,7 +155,7 @@ export class TasksService {
         images?: Array<{ resolution: string; path: string }>,
         errorMessage?: string,
     ): Promise<void> {
-        this.logger.debug('Updating task status', {
+        this.logger.debug(taskInfoMessages.UPDATING_STATUS, {
             taskId,
             newStatus: status,
             imagesCount: images?.length || 0,
@@ -165,10 +169,10 @@ export class TasksService {
 
         if (errorMessage) {
             updateData.errorMessage = errorMessage;
-            this.logger.error('Failed task', { taskId, errorMessage });
+            this.logger.error(`${taskResponseErrorMessages.FAILED_TASK} ${taskId}: ${errorMessage}`);
         }
 
         await this.taskModel.findByIdAndUpdate(taskId, updateData);
-        this.logger.info('Task updated', { taskId, status });
+        this.logger.info(taskInfoMessages.UPDATED_TASK, { taskId, status });
     }
 }

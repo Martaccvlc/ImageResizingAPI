@@ -17,7 +17,8 @@ import {
     getFileExtension,
     ensureDirectoryExists,
 } from '../../utils/files/file.utils';
-import { taskResponseMessages } from '../../utils/constants/tasks/task-messages.constants';
+import { taskResponseErrorMessages } from '../../utils/constants/tasks/task-messages.constants';
+import { taskProcessingInfoMessages, taskProcessingErrorMessages } from 'src/utils/constants/tasks/task-processing-messages.constants';
 
 @Injectable()
 export class TasksProcessor {
@@ -31,22 +32,22 @@ export class TasksProcessor {
     ) {}
 
     async processTask(taskId: string): Promise<void> {
-        this.logger.info('Starting to process task ', { taskId });
+        this.logger.info(`${ taskProcessingInfoMessages.STARTING_TASK }${ taskId }`);
 
         try {
             // Get task
             const task = await this.taskModel.findById(taskId);
             if (!task) {
-                throw new Error(`${taskResponseMessages.NOT_FOUND}: ${taskId}`);
+                throw new Error(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
             }
 
             // Get original image
             const originalPath = task.originalPath;
             if (!fs.existsSync(originalPath)) {
-                throw new Error(`File ${originalPath} does not exist`);
+                throw new Error(`${taskProcessingErrorMessages.FILE_NOT_FOUND} ${originalPath}`);
             }
 
-            this.logger.debug('Processing image...', {
+            this.logger.debug(taskProcessingInfoMessages.PROCESSING_IMAGE, {
                 taskId,
                 originalPath,
                 resolutions: this.resolutions,
@@ -57,8 +58,8 @@ export class TasksProcessor {
 
             for (const resolution of this.resolutions) {
                 try {
-                    // Procesar imagen
-                    this.logger.debug('Procesando resolución', {
+                    // Process image
+                    this.logger.debug(taskProcessingInfoMessages.PROCESSING_RESOLUTION, {
                         taskId,
                         resolution,
                     });
@@ -68,14 +69,14 @@ export class TasksProcessor {
                         resolution,
                     );
                     processedImages.push(imageInfo);
-                    this.logger.debug('Resolution processed successfully', {
+                    this.logger.debug(taskProcessingInfoMessages.PROCESSED_RESOLITION, {
                         taskId,
                         resolution,
                         path: imageInfo.path,
                     });
                 } catch (error) {
                     this.logger.error(
-                        `Error processing image with the resolution ${resolution}`,
+                        `${taskProcessingErrorMessages.FAILED_PROCESSING_WITH_RES} ${resolution}`,
                         {
                             taskId,
                             error: error.message,
@@ -92,12 +93,12 @@ export class TasksProcessor {
                 images: processedImages,
             });
 
-            this.logger.info('Image processed successfully', {
+            this.logger.info(taskProcessingInfoMessages.COMPLETED, {
                 taskId,
                 imagesCount: processedImages.length,
             });
         } catch (error) {
-            this.logger.error(`Error processing task ${taskId}`, {
+            this.logger.error(`${taskProcessingErrorMessages.PROCESSING_ERROR}${taskId}`, {
                 error: error.message,
                 stack: error.stack,
             });
@@ -122,7 +123,7 @@ export class TasksProcessor {
         );
 
         // Calculate MD5 of original file
-        this.logger.debug('Calculating hash', {
+        this.logger.debug(taskProcessingInfoMessages.HASH_CALCULATION, {
             taskId: task.id,
             filePath: originalPath,
         });
@@ -136,7 +137,7 @@ export class TasksProcessor {
         const finalFileName = `${md5}${getFileExtension(originalPath)}`;
         const finalPath = path.join(outputPath, finalFileName);
 
-        this.logger.debug('Processing image....', {
+        this.logger.debug(taskProcessingInfoMessages.PROCESSING_IMAGE, {
             taskId: task._id,
             resolution,
             outputPath: finalPath,
@@ -150,7 +151,7 @@ export class TasksProcessor {
         // Save image in database
         const relativePath = `/output/${originalFileName}/${resolution}/${finalFileName}`;
 
-        this.logger.debug('Saving image information in database...', {
+        this.logger.debug(taskProcessingInfoMessages.DATABASE_SAVE, {
             taskId: task.id,
             path: relativePath,
             resolution,

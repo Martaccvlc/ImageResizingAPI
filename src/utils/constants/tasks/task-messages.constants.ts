@@ -1,12 +1,27 @@
 /**
- * Provides responses for the task
+ * Error messages raised by the task
  */
-export const taskResponseMessages = {
-    CREATED: 'Task successfully created',
-    BAD_REQUEST: 'Invalid data',
-    FOUND: 'Task found',
+export const taskResponseErrorMessages = {
+    MISSING_PATH: 'URL or local image path needed.',
+    ERROR_CREATING_TASK: 'Error creating the task ',
+    INVALID_TASK_ID: 'Invalid task ID',
     NOT_FOUND: 'Task not found',
-  };
+    FAILED_TASK: 'Failed task',
+    BAD_REQUEST: 'Invalid data',
+};
+
+/**
+ * Information messages to give feedback about the task
+ */
+export const taskInfoMessages = {
+    CREATING: 'Creating a new processing task...',
+    DOWNLOADING_IMAGE: 'Downloading image of URL',
+    SEARCHING_TASK: 'Searching for task...',
+    UPDATING_STATUS: 'Updating task status...',
+    UPDATED_TASK: 'Task successfully updated',
+    FOUND: 'Task found',
+    CREATED: 'Task created successfully',
+};
 
 /**
 * Provides summaries for the task for Swagger
@@ -24,11 +39,3 @@ export const taskSwaggerSummaries = {
 export const taskExampleMessages = {
   TASK_EXAMPLE_ID: '65d4a54b89c5e342b2c2c5f6',
 };
-
-/**
- * Explains how the process is going
- */
-export const taskInfoMessages = {
-
-};
-  
