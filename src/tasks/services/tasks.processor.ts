@@ -18,8 +18,8 @@ import {
     ensureDirectoryExists,
 } from '../../utils/files/file.utils';
 import { taskResponseErrorMessages } from '../../utils/constants/tasks/task-messages.constants';
-import { taskProcessingInfoMessages, taskProcessingErrorMessages } from 'src/utils/constants/tasks/task-processing-messages.constants';
-import { fileData } from 'src/utils/constants/files/files-details.constants';
+import { taskProcessingInfoMessages, taskProcessingErrorMessages } from '../../utils/constants/tasks/task-processing-messages.constants';
+import { fileData } from '../../utils/constants/files/files-details.constants';
 
 @Injectable()
 export class TasksProcessor {
