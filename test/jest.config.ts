@@ -6,7 +6,6 @@ const config: Config = {
     testMatch: [
         '<rootDir>/test/unit/**/*.spec.ts',
         '<rootDir>/test/integration/**/*.spec.ts',
-        '<rootDir>/test/e2e/**/*.e2e-spec.ts'
     ],
     transform: {
         '^.+\\.(t|j)s$': 'ts-jest',

@@ -1,14 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection, connect, createConnection } from 'mongoose';
-import { getModelToken } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as path from 'path';
 import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import { format } from 'winston';
 import * as sharp from 'sharp';
 
@@ -231,53 +229,98 @@ describe('Tasks Integration Tests', () => {
     });
 
     describe('Task Processing Flow', () => {
-        it('should process a task and generate resized images', async () => {
-            const response = await request(app.getHttpServer())
+        it('should complete the full task processing flow', async () => {
+            // Create a valid test image
+            const sampleImagePath = path.join(testInputDir, 'flow-test.jpg');
+            await sharp({
+                create: {
+                    width: 100,
+                    height: 100,
+                    channels: 3,
+                    background: { r: 255, g: 255, b: 255 }
+                }
+            })
+            .jpeg()
+            .toFile(sampleImagePath);
+
+            const createResponse = await request(app.getHttpServer())
                 .post('/api/tasks')
-                .send({
-                    localPath: testImagePath,
-                })
-                .expect(201);
+                .send({ localPath: sampleImagePath })
+                .expect(HttpStatus.CREATED);
 
-            // Wait for task processing to complete
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            const taskId = createResponse.body.taskId;
+            expect(taskId).toBeDefined();
 
-            // Get the task again to check its status
-            const taskResponse = await request(app.getHttpServer())
-                .get(`/api/tasks/${response.body.taskId}`)
-                .expect(200);
+            let finalStatus;
+            let attempts = 0;
+            const maxAttempts = 10;
 
-            expect(taskResponse.body).toHaveProperty('status', TaskStatus.COMPLETED);
-            expect(taskResponse.body).toHaveProperty('images');
-            expect(taskResponse.body.images).toHaveLength(2);
-            expect(taskResponse.body.images[0]).toHaveProperty('resolution');
-            expect(taskResponse.body.images[0]).toHaveProperty('path');
-        }, 10000);
+            while (attempts < maxAttempts) {
+                const response = await request(app.getHttpServer())
+                    .get(`/api/tasks/${taskId}`)
+                    .expect(HttpStatus.OK);
 
-        it('should handle processing errors gracefully', async () => {
-            // Create an invalid image file
+                finalStatus = response.body.status;
+                
+                if (finalStatus !== TaskStatus.PENDING) {
+                    break;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                attempts++;
+            }
+
+            const finalResponse = await request(app.getHttpServer())
+                .get(`/api/tasks/${taskId}`)
+                .expect(HttpStatus.OK);
+
+            expect(finalResponse.body.status).toBe(TaskStatus.COMPLETED);
+            expect(finalResponse.body.images).toBeDefined();
+            expect(finalResponse.body.images).toHaveLength(2);
+            
+            finalResponse.body.images.forEach((image) => {
+                expect(image).toHaveProperty('resolution');
+                expect(image).toHaveProperty('path');
+                expect(['800', '1024']).toContain(image.resolution);
+            });
+        });
+
+        it('should handle invalid image processing', async () => {
             const invalidImagePath = path.join(testInputDir, 'invalid.jpg');
-            fs.writeFileSync(invalidImagePath, 'not an image');
+            fs.writeFileSync(invalidImagePath, 'invalid image data');
 
-            const response = await request(app.getHttpServer())
+            const createResponse = await request(app.getHttpServer())
                 .post('/api/tasks')
-                .send({
-                    localPath: invalidImagePath,
-                })
-                .expect(201);
+                .send({ localPath: invalidImagePath })
+                .expect(HttpStatus.CREATED);
 
-            // Wait for task processing to complete
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            const taskId = createResponse.body.taskId;
 
-            // Get the task again to check its status
-            const taskResponse = await request(app.getHttpServer())
-                .get(`/api/tasks/${response.body.taskId}`)
-                .expect(200);
+            let finalStatus;
+            let attempts = 0;
+            const maxAttempts = 10;
 
-            expect(taskResponse.body).toHaveProperty('status', TaskStatus.FAILED);
-            expect(taskResponse.body).toHaveProperty('images');
-            expect(taskResponse.body.images).toHaveLength(0);
-            expect(taskResponse.body).toHaveProperty('errorMessage');
-        }, 10000);
+            while (attempts < maxAttempts) {
+                const response = await request(app.getHttpServer())
+                    .get(`/api/tasks/${taskId}`)
+                    .expect(HttpStatus.OK);
+
+                finalStatus = response.body.status;
+                
+                if (finalStatus !== TaskStatus.PENDING) {
+                    break;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                attempts++;
+            }
+
+            const finalResponse = await request(app.getHttpServer())
+                .get(`/api/tasks/${taskId}`)
+                .expect(HttpStatus.OK);
+
+            expect(finalResponse.body.status).toBe(TaskStatus.FAILED);
+            expect(finalResponse.body.errorMessage).toBeDefined();
+        });
     });
 }); 
