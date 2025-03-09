@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -47,6 +47,12 @@ export class TasksService {
             let originalPath: string;
 
             if (createTaskDto.url) {
+                try {
+                    // Validate URL format
+                    new URL(createTaskDto.url);
+                } catch (error) {
+                    throw new BadRequestException(fileErrorResponseMessages.MALFORMED_URL);
+                }
                 // In case of an URL download the image
                 const inputDir =
                     this.configService.get<string>('paths.input') ??
@@ -62,7 +68,6 @@ export class TasksService {
                 });
                 await downloadImage(createTaskDto.url, originalPath);
             } else {
-                // If it is a local pagth check whether it exists or not
                 originalPath = createTaskDto.localPath ?? '.';
                 if (!fs.existsSync(originalPath)) {
                     const error = `${fileErrorResponseMessages.FILE_NOT_FOUND}: ${ originalPath }`;
@@ -163,13 +168,24 @@ export class TasksService {
 
         const updateData: any = { status };
 
-        if (images) {
-            updateData.images = images;
+        const task = await this.taskModel.findById(taskId);
+        if (!task) {
+            this.logger.warn(`${taskResponseErrorMessages.NOT_FOUND}, ${taskId}`);
+            throw new NotFoundException(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
         }
 
-        if (errorMessage) {
-            updateData.errorMessage = errorMessage;
-            this.logger.error(`${taskResponseErrorMessages.FAILED_TASK} ${taskId}: ${errorMessage}`);
+        if (status === TaskStatus.PENDING) {
+            updateData.errorMessage = null;
+            updateData.images = [];
+        } else {
+            if (images) {
+                updateData.images = images;
+            }
+
+            if (errorMessage) {
+                updateData.errorMessage = errorMessage;
+                this.logger.error(`${taskResponseErrorMessages.FAILED_TASK} ${taskId}: ${errorMessage}`);
+            }
         }
 
         await this.taskModel.findByIdAndUpdate(taskId, updateData);
