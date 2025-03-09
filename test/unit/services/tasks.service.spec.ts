@@ -1,24 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
-import { getModelToken } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { TasksService } from '../../src/tasks/services/tasks.service';
-import { TasksProcessor } from '../../src/tasks/services/tasks.processor';
-import { Task } from '../../src/tasks/entities/task.entity';
-import { TaskStatus } from '../../src/utils/enums/tasks/task-status.enum';
-import { Image } from '../../src/tasks/entities/image.entity';
-import { CreateTaskDto } from '../../src/tasks/dto/create-task.dto';
-import { fileErrorResponseMessages } from '../../src/utils/constants/files/files-messages.constants';
-import { taskResponseErrorMessages } from '../../src/utils/constants/tasks/task-messages.constants';
-import { TestContext } from '../types/test-context';
-import { setupTestContext, cleanupTestContext } from '../utils/common.utils';
-import { setupTestDirectories, cleanupTestDirectories } from '../utils/directories/test-directories.utils';
-import { createTestImage } from '../utils/images/test-image.utils';
+import { TaskStatus } from '../../../src/utils/enums/tasks/task-status.enum';
+import { fileErrorResponseMessages } from '../../../src/utils/constants/files/files-messages.constants';
+import { taskResponseErrorMessages } from '../../../src/utils/constants/tasks/task-messages.constants';
+import { TestContext } from '../../types/test-context';
+import { setupTestContext, cleanupTestContext } from '../../utils/common.utils';
+import { setupTestDirectories, cleanupTestDirectories } from '../../utils/directories/test-directories.utils';
+import { createTestImage } from '../../utils/images/test-image.utils';
 
 // Mock the file utils module
 jest.mock('../../src/utils/files/file.utils', () => ({

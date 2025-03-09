@@ -1,6 +1,5 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection, connect, Model } from 'mongoose';
-
 import { Task, TaskSchema } from '../../../src/tasks/entities/task.entity';
 import { Image, ImageSchema } from '../../../src/tasks/entities/image.entity';
 
@@ -17,4 +16,4 @@ export const setupTestDatabase = async (): Promise<{
     const imageModel = mongoConnection.model<Image>(Image.name, ImageSchema);
 
     return { mongod, mongoConnection, taskModel, imageModel };
-};
+}; 
