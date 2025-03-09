@@ -20,8 +20,6 @@
     "paths": {
       "src/*": ["src/*"],
       "@test/*": ["test/*"],
-      "@fixtures/*": ["test/__fixtures__/*"],
-      "@mocks/*": ["test/__mocks__/*"]
     }
   },
   "include": [
