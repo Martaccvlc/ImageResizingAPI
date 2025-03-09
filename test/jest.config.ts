@@ -5,7 +5,7 @@ const config: Config = {
     rootDir: '..',
     testMatch: [
         '<rootDir>/test/unit/**/*.spec.ts',
-        '<rootDir>/test/integration/**/*.spec.ts',
+        '<rootDir>/test/integration/**/*.spec.ts'
     ],
     transform: {
         '^.+\\.(t|j)s$': 'ts-jest',
