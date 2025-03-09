@@ -11,7 +11,7 @@ import { setupTestDirectories, cleanupTestDirectories } from '../../utils/direct
 import { createTestImage } from '../../utils/images/test-image.utils';
 
 // Mock the file utils module
-jest.mock('../../src/utils/files/file.utils', () => ({
+jest.mock('../../../src/utils/files/file.utils', () => ({
     calculateMD5: jest.fn().mockReturnValue('test-md5'),
     getFileExtension: jest.fn().mockReturnValue('.jpg'),
     downloadImage: jest.fn().mockImplementation((url: string, outputPath: string) => {
