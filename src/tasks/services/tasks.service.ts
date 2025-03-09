@@ -34,7 +34,7 @@ export class TasksService {
         try {
             // Check if URL or local path is provided
             if (!createTaskDto.url && !createTaskDto.localPath) {
-                throw new Error(taskResponseErrorMessages.MISSING_PATH);
+                throw new BadRequestException(taskResponseErrorMessages.MISSING_PATH);
             }
 
             this.logger.info(taskInfoMessages.CREATING, {
@@ -72,7 +72,7 @@ export class TasksService {
                 if (!fs.existsSync(originalPath)) {
                     const error = `${fileErrorResponseMessages.FILE_NOT_FOUND}: ${ originalPath }`;
                     this.logger.error(error);
-                    throw new Error(error);
+                    throw new NotFoundException(error);
                 }
             }
 

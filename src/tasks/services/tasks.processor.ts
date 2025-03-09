@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as sharp from 'sharp';
@@ -39,7 +39,7 @@ export class TasksProcessor {
             // Get task
             const task = await this.taskModel.findById(taskId);
             if (!task) {
-                throw new Error(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
+                throw new BadRequestException(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
             }
 
             // Get original image

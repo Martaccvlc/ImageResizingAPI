@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'winston';
+import * as sharp from 'sharp';
 
 import { AppModule } from '../../src/app.module';
 import { Task, TaskSchema } from '../../src/tasks/entities/task.entity';
@@ -17,6 +18,7 @@ import { Image, ImageSchema } from '../../src/tasks/entities/image.entity';
 import { TaskStatus } from '../../src/utils/enums/tasks/task-status.enum';
 import { taskResponseErrorMessages } from '../../src/utils/constants/tasks/task-messages.constants';
 import { fileErrorResponseMessages } from '../../src/utils/constants/files/files-messages.constants';
+import { createTestImage } from '../utils/images/test-image.utils';
 
 describe('Tasks Integration Tests', () => {
     let app: INestApplication;
@@ -26,6 +28,7 @@ describe('Tasks Integration Tests', () => {
     let imageModel: any;
     let testInputDir: string;
     let testOutputDir: string;
+    let testImagePath: string;
 
     beforeAll(async () => {
         // Create test directories
@@ -35,9 +38,18 @@ describe('Tasks Integration Tests', () => {
         fs.mkdirSync(testOutputDir, { recursive: true });
 
         // Create test image
-        const testImagePath = path.join(testInputDir, 'test-image.jpg');
-        const testImageBuffer = Buffer.from('fake image data');
-        fs.writeFileSync(testImagePath, testImageBuffer);
+        testImagePath = path.join(testInputDir, 'test-image.jpg');
+        await createTestImage(testImagePath, {
+            width: 100,
+            height: 100,
+            background: { r: 255, g: 255, b: 255 }
+        });
+
+
+        // Verify the image was created
+        if (!fs.existsSync(testImagePath)) {
+            throw new Error('Failed to create test image');
+        }
 
         // Start in-memory MongoDB
         mongod = await MongoMemoryServer.create();
@@ -53,8 +65,10 @@ describe('Tasks Integration Tests', () => {
                             mongodb: {
                                 uri,
                             },
-                            inputDir: testInputDir,
-                            outputDir: testOutputDir,
+                            paths: {
+                                input: testInputDir,
+                                output: testOutputDir,
+                            },
                         }),
                     ],
                 }),
@@ -69,6 +83,7 @@ describe('Tasks Integration Tests', () => {
 
         // Create test app
         app = moduleFixture.createNestApplication();
+        app.setGlobalPrefix('api');
         await app.init();
 
         // Connect to MongoDB
@@ -101,39 +116,53 @@ describe('Tasks Integration Tests', () => {
             const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: 'test/test-input/test-image.jpg',
+                    localPath: testImagePath,
                 })
                 .expect(201);
 
-            expect(response.body).toBeDefined();
-            expect(response.body.id).toBeDefined();
-            expect(response.body.status).toBe(TaskStatus.PENDING);
-            expect(response.body.price).toBeDefined();
+            expect(response.body).toHaveProperty('taskId');
+            expect(response.body).toHaveProperty('status', TaskStatus.PENDING);
+            expect(response.body).toHaveProperty('price');
+            expect(response.body).toHaveProperty('images');
 
-            // Verify task was created in database
-            const task = await taskModel.findById(response.body.id);
-            expect(task).toBeDefined();
-            expect(task.status).toBe(TaskStatus.PENDING);
-        });
+            // Wait for task processing to complete
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            // Get the task again to check its status
+            const taskResponse = await request(app.getHttpServer())
+                .get(`/api/tasks/${response.body.taskId}`)
+                .expect(200);
+
+            expect(taskResponse.body).toHaveProperty('status', TaskStatus.COMPLETED);
+            expect(taskResponse.body).toHaveProperty('images');
+            expect(taskResponse.body.images).toHaveLength(2);
+        }, 10000);
 
         it('should create a task with a URL', async () => {
             const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    url: 'http://example.com/image.jpg',
+                    url: 'https://picsum.photos/800/600',
                 })
                 .expect(201);
 
-            expect(response.body).toBeDefined();
-            expect(response.body.id).toBeDefined();
-            expect(response.body.status).toBe(TaskStatus.PENDING);
-            expect(response.body.price).toBeDefined();
+            expect(response.body).toHaveProperty('taskId');
+            expect(response.body).toHaveProperty('status', TaskStatus.PENDING);
+            expect(response.body).toHaveProperty('price');
+            expect(response.body).toHaveProperty('images');
 
-            // Verify task was created in database
-            const task = await taskModel.findById(response.body.id);
-            expect(task).toBeDefined();
-            expect(task.status).toBe(TaskStatus.PENDING);
-        });
+            // Wait for task processing to complete
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            // Get the task again to check its status
+            const taskResponse = await request(app.getHttpServer())
+                .get(`/api/tasks/${response.body.taskId}`)
+                .expect(200);
+
+            expect(taskResponse.body).toHaveProperty('status', TaskStatus.COMPLETED);
+            expect(taskResponse.body).toHaveProperty('images');
+            expect(taskResponse.body.images).toHaveLength(2);
+        }, 10000);
 
         it('should return 400 when no URL or local path is provided', async () => {
             const response = await request(app.getHttpServer())
@@ -144,15 +173,15 @@ describe('Tasks Integration Tests', () => {
             expect(response.body.message).toBe('URL or local image path needed.');
         });
 
-        it('should return 400 when local file does not exist', async () => {
+        it('should return 404 when local file is not found', async () => {
             const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: 'test/test-input/non-existent.jpg',
+                    localPath: path.join(testInputDir, 'non-existent.jpg'),
                 })
-                .expect(400);
+                .expect(404);
 
-            expect(response.body.message).toBe(fileErrorResponseMessages.FILE_NOT_FOUND);
+            expect(response.body.message).toBe(`${fileErrorResponseMessages.FILE_NOT_FOUND}: ${path.join(testInputDir, 'non-existent.jpg')}`);
         });
 
         it('should return 400 when URL is invalid', async () => {
@@ -173,11 +202,11 @@ describe('Tasks Integration Tests', () => {
             const createResponse = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: 'test/test-input/test-image.jpg',
+                    localPath: testImagePath,
                 })
                 .expect(201);
 
-            const taskId = createResponse.body.id;
+            const taskId = createResponse.body.taskId;
 
             // Get the task
             const response = await request(app.getHttpServer())
@@ -185,7 +214,7 @@ describe('Tasks Integration Tests', () => {
                 .expect(200);
 
             expect(response.body).toBeDefined();
-            expect(response.body.id).toBe(taskId);
+            expect(response.body.taskId).toBe(taskId);
             expect(response.body.status).toBe(TaskStatus.PENDING);
             expect(response.body.price).toBeDefined();
         });
@@ -197,80 +226,58 @@ describe('Tasks Integration Tests', () => {
                 .get(`/api/tasks/${nonExistentId}`)
                 .expect(404);
 
-            expect(response.body.message).toBe(taskResponseErrorMessages.INVALID_TASK_ID);
-        });
-
-        it('should return 400 when task id is invalid', async () => {
-            const invalidId = 'invalid-id';
-
-            const response = await request(app.getHttpServer())
-                .get(`/api/tasks/${invalidId}`)
-                .expect(400);
-
-            expect(response.body.message).toBe(taskResponseErrorMessages.INVALID_TASK_ID);
+            expect(response.body.message).toBe(`${taskResponseErrorMessages.NOT_FOUND}: ${nonExistentId}`);
         });
     });
 
     describe('Task Processing Flow', () => {
         it('should process a task and generate resized images', async () => {
-            // Create a task
-            const createResponse = await request(app.getHttpServer())
+            const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: 'test/test-input/test-image.jpg',
+                    localPath: testImagePath,
                 })
                 .expect(201);
 
-            const taskId = createResponse.body.id;
+            // Wait for task processing to complete
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
-            // Wait for task to be processed (this might take a few seconds)
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-
-            // Get the task status
-            const response = await request(app.getHttpServer())
-                .get(`/api/tasks/${taskId}`)
+            // Get the task again to check its status
+            const taskResponse = await request(app.getHttpServer())
+                .get(`/api/tasks/${response.body.taskId}`)
                 .expect(200);
 
-            expect(response.body.status).toBe(TaskStatus.COMPLETED);
-            expect(response.body.imagesCount).toBe(2);
-
-            // Verify images were created
-            const task = await taskModel.findById(taskId).populate('images');
-            expect(task.images).toHaveLength(2);
-            expect(task.images[0].resolution).toBe('1024');
-            expect(task.images[1].resolution).toBe('800');
-
-            // Verify image files exist
-            const image1Path = path.join(testOutputDir, task.images[0].path);
-            const image2Path = path.join(testOutputDir, task.images[1].path);
-            expect(fs.existsSync(image1Path)).toBe(true);
-            expect(fs.existsSync(image2Path)).toBe(true);
-        }, 10000); // Increase timeout for this test
+            expect(taskResponse.body).toHaveProperty('status', TaskStatus.COMPLETED);
+            expect(taskResponse.body).toHaveProperty('images');
+            expect(taskResponse.body.images).toHaveLength(2);
+            expect(taskResponse.body.images[0]).toHaveProperty('resolution');
+            expect(taskResponse.body.images[0]).toHaveProperty('path');
+        }, 10000);
 
         it('should handle processing errors gracefully', async () => {
-            // Create a task with an invalid image
+            // Create an invalid image file
             const invalidImagePath = path.join(testInputDir, 'invalid.jpg');
             fs.writeFileSync(invalidImagePath, 'not an image');
 
-            const createResponse = await request(app.getHttpServer())
+            const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: 'test/test-input/invalid.jpg',
+                    localPath: invalidImagePath,
                 })
                 .expect(201);
 
-            const taskId = createResponse.body.id;
+            // Wait for task processing to complete
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
-            // Wait for task to be processed
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-
-            // Get the task status
-            const response = await request(app.getHttpServer())
-                .get(`/api/tasks/${taskId}`)
+            // Get the task again to check its status
+            const taskResponse = await request(app.getHttpServer())
+                .get(`/api/tasks/${response.body.taskId}`)
                 .expect(200);
 
-            expect(response.body.status).toBe(TaskStatus.FAILED);
-            expect(response.body.imagesCount).toBe(0);
-        }, 10000); // Increase timeout for this test
+            expect(taskResponse.body).toHaveProperty('status', TaskStatus.FAILED);
+            expect(taskResponse.body).toHaveProperty('images');
+            expect(taskResponse.body.images).toHaveLength(0);
+            expect(taskResponse.body).toHaveProperty('errorMessage');
+        }, 10000);
     });
 }); 

@@ -1,17 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
-import { getModelToken } from '@nestjs/mongoose';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as sharp from 'sharp';
 
 import { TasksProcessor } from '../../src/tasks/services/tasks.processor';
-import { Task } from '../../src/tasks/entities/task.entity';
-import { Image } from '../../src/tasks/entities/image.entity';
 import { TaskStatus } from '../../src/utils/enums/tasks/task-status.enum';
 import { taskProcessingErrorMessages } from '../../src/utils/constants/tasks/task-processing-messages.constants';
-import { taskResponseErrorMessages } from '../../src/utils/constants/tasks/task-messages.constants';
 import { TestContext } from '../types/test-context';
 import { setupTestContext, cleanupTestContext } from '../utils/common.utils';
 import { setupTestDirectories, cleanupTestDirectories } from '../utils/directories/test-directories.utils';

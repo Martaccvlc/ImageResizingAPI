@@ -116,12 +116,14 @@ describe('Tasks API (e2e)', () => {
                 });
         });
 
-        it('should return 500 when neither URL nor local path is provided', () => {
-            return request(app.getHttpServer())
-                .post('/api/tasks')
-                .send({})
-                .expect(HttpStatus.INTERNAL_SERVER_ERROR);
-        });
+        it('should return 400 when no URL or local path is provided', async () => {
+                    const response = await request(app.getHttpServer())
+                        .post('/api/tasks')
+                        .send({})
+                        .expect(400);
+        
+                    expect(response.body.message).toBe('URL or local image path needed.');
+                });
     });
 
     describe('/api/tasks/:id (GET)', () => {
