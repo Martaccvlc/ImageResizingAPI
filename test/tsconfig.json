@@ -1,0 +1,19 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": "..",
+        "paths": {
+            "@test/*": ["test/*"],
+            "@fixtures/*": ["test/__fixtures__/*"],
+            "@mocks/*": ["test/__mocks__/*"],
+            "src/*": ["src/*"]
+        }
+    },
+    "include": [
+        "./**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+} 

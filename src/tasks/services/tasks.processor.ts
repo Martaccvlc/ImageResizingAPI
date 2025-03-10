@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as sharp from 'sharp';
@@ -18,7 +18,10 @@ import {
     ensureDirectoryExists,
 } from '../../utils/files/file.utils';
 import { taskResponseErrorMessages } from '../../utils/constants/tasks/task-messages.constants';
-import { taskProcessingInfoMessages, taskProcessingErrorMessages } from '../../utils/constants/tasks/task-processing-messages.constants';
+import {
+    taskProcessingInfoMessages,
+    taskProcessingErrorMessages,
+} from '../../utils/constants/tasks/task-processing-messages.constants';
 import { fileData } from '../../utils/constants/files/files-details.constants';
 
 @Injectable()
@@ -33,19 +36,25 @@ export class TasksProcessor {
     ) {}
 
     async processTask(taskId: string): Promise<void> {
-        this.logger.info(`${ taskProcessingInfoMessages.STARTING_TASK }${ taskId }`);
+        this.logger.info(
+            `${taskProcessingInfoMessages.STARTING_TASK}${taskId}`,
+        );
 
         try {
             // Get task
             const task = await this.taskModel.findById(taskId);
             if (!task) {
-                throw new Error(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
+                throw new BadRequestException(
+                    `${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`,
+                );
             }
 
             // Get original image
             const originalPath = task.originalPath;
             if (!fs.existsSync(originalPath)) {
-                throw new Error(`${taskProcessingErrorMessages.FILE_NOT_FOUND} ${originalPath}`);
+                throw new Error(
+                    `${taskProcessingErrorMessages.FILE_NOT_FOUND} ${originalPath}`,
+                );
             }
 
             this.logger.debug(taskProcessingInfoMessages.PROCESSING_IMAGE, {
@@ -60,21 +69,27 @@ export class TasksProcessor {
             for (const resolution of this.resolutions) {
                 try {
                     // Process image
-                    this.logger.debug(taskProcessingInfoMessages.PROCESSING_RESOLUTION, {
-                        taskId,
-                        resolution,
-                    });
+                    this.logger.debug(
+                        taskProcessingInfoMessages.PROCESSING_RESOLUTION,
+                        {
+                            taskId,
+                            resolution,
+                        },
+                    );
                     const imageInfo = await this.processImage(
                         task,
                         originalPath,
                         resolution,
                     );
                     processedImages.push(imageInfo);
-                    this.logger.debug(taskProcessingInfoMessages.PROCESSED_RESOLITION, {
-                        taskId,
-                        resolution,
-                        path: imageInfo.path,
-                    });
+                    this.logger.debug(
+                        taskProcessingInfoMessages.PROCESSED_RESOLITION,
+                        {
+                            taskId,
+                            resolution,
+                            path: imageInfo.path,
+                        },
+                    );
                 } catch (error) {
                     this.logger.error(
                         `${taskProcessingErrorMessages.FAILED_PROCESSING_WITH_RES} ${resolution}`,
@@ -99,10 +114,13 @@ export class TasksProcessor {
                 imagesCount: processedImages.length,
             });
         } catch (error) {
-            this.logger.error(`${taskProcessingErrorMessages.PROCESSING_ERROR}${taskId}`, {
-                error: error.message,
-                stack: error.stack,
-            });
+            this.logger.error(
+                `${taskProcessingErrorMessages.PROCESSING_ERROR}${taskId}`,
+                {
+                    error: error.message,
+                    stack: error.stack,
+                },
+            );
             // Update task status when failed
             await this.taskModel.findByIdAndUpdate(taskId, {
                 status: TaskStatus.FAILED,

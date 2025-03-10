@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    Inject,
+    BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -14,9 +19,15 @@ import { TaskStatus } from '../../utils/enums/tasks/task-status.enum';
 import { Image } from '../entities/image.entity';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
-import { downloadImage, ensureDirectoryExists } from '../../utils/files/file.utils';
+import {
+    downloadImage,
+    ensureDirectoryExists,
+} from '../../utils/files/file.utils';
 import { TasksProcessor } from './tasks.processor';
-import { taskResponseErrorMessages, taskInfoMessages } from '../../utils/constants/tasks/task-messages.constants';
+import {
+    taskResponseErrorMessages,
+    taskInfoMessages,
+} from '../../utils/constants/tasks/task-messages.constants';
 import { fileErrorResponseMessages } from 'src/utils/constants/files/files-messages.constants';
 import { taskProcessingErrorMessages } from 'src/utils/constants/tasks/task-processing-messages.constants';
 
@@ -34,7 +45,9 @@ export class TasksService {
         try {
             // Check if URL or local path is provided
             if (!createTaskDto.url && !createTaskDto.localPath) {
-                throw new Error(taskResponseErrorMessages.MISSING_PATH);
+                throw new BadRequestException(
+                    taskResponseErrorMessages.MISSING_PATH,
+                );
             }
 
             this.logger.info(taskInfoMessages.CREATING, {
@@ -47,6 +60,14 @@ export class TasksService {
             let originalPath: string;
 
             if (createTaskDto.url) {
+                try {
+                    // Validate URL format
+                    new URL(createTaskDto.url);
+                } catch (error) {
+                    throw new BadRequestException(
+                        fileErrorResponseMessages.MALFORMED_URL,
+                    );
+                }
                 // In case of an URL download the image
                 const inputDir =
                     this.configService.get<string>('paths.input') ??
@@ -62,12 +83,11 @@ export class TasksService {
                 });
                 await downloadImage(createTaskDto.url, originalPath);
             } else {
-                // If it is a local pagth check whether it exists or not
                 originalPath = createTaskDto.localPath ?? '.';
                 if (!fs.existsSync(originalPath)) {
-                    const error = `${fileErrorResponseMessages.FILE_NOT_FOUND}: ${ originalPath }`;
+                    const error = `${fileErrorResponseMessages.FILE_NOT_FOUND}: ${originalPath}`;
                     this.logger.error(error);
-                    throw new Error(error);
+                    throw new NotFoundException(error);
                 }
             }
 
@@ -87,10 +107,13 @@ export class TasksService {
             this.tasksProcessor
                 .processTask(newTask.id.toString())
                 .catch((error) => {
-                    this.logger.error(`${taskProcessingErrorMessages.PROCESSING_ERROR} ${newTask._id}`, {
-                        error: error.message,
-                        stack: error.stack,
-                    });
+                    this.logger.error(
+                        `${taskProcessingErrorMessages.PROCESSING_ERROR} ${newTask._id}`,
+                        {
+                            error: error.message,
+                            stack: error.stack,
+                        },
+                    );
                 });
 
             // Return a response
@@ -113,15 +136,23 @@ export class TasksService {
         this.logger.debug(taskInfoMessages.SEARCHING_TASK, { taskId });
 
         if (!Types.ObjectId.isValid(taskId)) {
-            this.logger.warn(taskResponseErrorMessages.INVALID_TASK_ID, { taskId });
-            throw new NotFoundException(`${taskResponseErrorMessages.INVALID_TASK_ID}: ${taskId}`);
+            this.logger.warn(taskResponseErrorMessages.INVALID_TASK_ID, {
+                taskId,
+            });
+            throw new NotFoundException(
+                `${taskResponseErrorMessages.INVALID_TASK_ID}: ${taskId}`,
+            );
         }
 
         const task = await this.taskModel.findById(taskId);
 
         if (!task) {
-            this.logger.warn(`${taskResponseErrorMessages.NOT_FOUND}, ${ taskId }`);
-            throw new NotFoundException(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
+            this.logger.warn(
+                `${taskResponseErrorMessages.NOT_FOUND}, ${taskId}`,
+            );
+            throw new NotFoundException(
+                `${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`,
+            );
         }
 
         this.logger.debug(taskInfoMessages.FOUND, {
@@ -163,13 +194,30 @@ export class TasksService {
 
         const updateData: any = { status };
 
-        if (images) {
-            updateData.images = images;
+        const task = await this.taskModel.findById(taskId);
+        if (!task) {
+            this.logger.warn(
+                `${taskResponseErrorMessages.NOT_FOUND}, ${taskId}`,
+            );
+            throw new NotFoundException(
+                `${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`,
+            );
         }
 
-        if (errorMessage) {
-            updateData.errorMessage = errorMessage;
-            this.logger.error(`${taskResponseErrorMessages.FAILED_TASK} ${taskId}: ${errorMessage}`);
+        if (status === TaskStatus.PENDING) {
+            updateData.errorMessage = null;
+            updateData.images = [];
+        } else {
+            if (images) {
+                updateData.images = images;
+            }
+
+            if (errorMessage) {
+                updateData.errorMessage = errorMessage;
+                this.logger.error(
+                    `${taskResponseErrorMessages.FAILED_TASK} ${taskId}: ${errorMessage}`,
+                );
+            }
         }
 
         await this.taskModel.findByIdAndUpdate(taskId, updateData);

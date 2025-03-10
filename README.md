@@ -94,35 +94,9 @@ Response:
 }
 ```
 
-## Testing
-
-The project includes both unit tests and end-to-end (e2e) tests.
-
-```bash
-# Run unit tests
-npm test
-
-# Run e2e tests
-npm run test:e2e
-
-# Generate test coverage
-npm run test:cov
-```
-
-### Test Structure
-
-- **Unit Tests**: Located in the `test/providers` and `test/controllers` directories.
-- **E2E Tests**: Located in the `test/e2e` directory.
-
-The tests use:
-- Jest as the testing framework
-- MongoDB memory server for database testing
-- Mocked services for isolated testing
-
-
 ## Architecture
 
-The project follows NestJS's module-based structure. 
+The project follows NestJS's module-based structure providing a testable, scalable, loosely coupled and easily maintainable application. 
 
 ### Technical Stack
 
@@ -182,3 +156,125 @@ src/
      - `TasksService`: Business logic and task management
      - `TasksProcessor`: Image processing using Sharp
      - MongoDB schemas for Tasks and Images
+
+### Test Structure
+
+### Directory Structure
+```
+test/
+├── integration/          # Integration tests
+│   └── tasks.integration.spec.ts
+├── unit/                # Unit tests
+│   └── services/
+│       └── tasks.processor.spec.ts
+│       └── tasks.service.spec.ts
+├── utils/               # Test utilities
+│   ├── common.utils.ts
+│   ├── directories/
+│   │   └── test-directories.utils.ts
+│   └── images/
+│       └── test-image.utils.ts
+└── types/               # Test type definitions
+    └── test-context.ts
+```
+
+### Test Components
+
+#### Integration Tests (`tasks.integration.spec.ts`)
+Tests the complete API functionality including:
+- Task creation with local images
+- Error handling for invalid inputs
+- Task status retrieval
+- Full task processing flow
+- Invalid image handling
+
+#### Key Test Cases:
+1. `POST /api/tasks`
+   - Creating tasks with valid local images
+   - Handling missing URL/path
+   - Handling non-existent files
+   - Handling invalid URLs
+
+2. `GET /api/tasks/:id`
+   - Retrieving task status
+   - Handling non-existent tasks
+
+3. Task Processing Flow
+   - Complete task processing verification
+   - Invalid image processing handling
+
+### Unit Tests (`tasks.processor.spec.ts`)
+Tests the Tasks services in isolation.
+
+#### Key Test Cases:
+1. Basic Processing
+   - Successful image processing
+   - Multiple resolution handling
+   - Task status transitions
+
+2. Error Handling
+   - Non-existent tasks
+   - Missing files
+   - Invalid image formats
+
+### Test Image Creation (`test-image.utils.ts`)
+Creates test images for testing purposes with the following features:
+- Configurable dimensions and background color
+- Retry mechanism for reliability
+- Proper file permissions handling
+- Directory creation and cleanup
+
+```typescript
+interface TestImageOptions {
+    width: number;
+    height: number;
+    background: {
+        r: number;
+        g: number;
+        b: number;
+        alpha?: number;
+    };
+}
+```
+
+### Directory Management (`test-directories.utils.ts`)
+Manages test directories with:
+- Automatic workspace detection
+- Directory creation with proper permissions
+- Cleanup functionality
+- Error handling
+
+### Test Context
+
+The test suite uses a shared test context that provides:
+- MongoDB test instance
+- Task and Image models
+- Processor instance
+- Utility functions
+
+### Running Tests
+
+#### Commands
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- test/integration/tasks.integration.spec.ts
+
+# Run with coverage
+npm run test:cov
+```
+
+### Test Environment
+- Test directories: `test/test-input` and `test/test-output`
+- MongoDB: In-memory instance
+- Image resolutions: 800px, 1024px
+- Default timeout: 30000ms
+
+### Test Image Defaults
+- Width: 2048px
+- Height: 2048px
+- Format: JPEG
+- Quality: 90
+- Background: White 
