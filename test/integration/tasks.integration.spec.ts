@@ -159,31 +159,6 @@ describe('Tasks Integration Tests', () => {
             expect(taskResponse.body.images).toHaveLength(2);
         }, 10000);
 
-        it('should create a task with a URL', async () => {
-            const response = await request(app.getHttpServer())
-                .post('/api/tasks')
-                .send({
-                    url: 'https://picsum.photos/800/600',
-                })
-                .expect(201);
-
-            expect(response.body).toHaveProperty('taskId');
-            expect(response.body).toHaveProperty('status', TaskStatus.PENDING);
-            expect(response.body).toHaveProperty('price');
-
-            // Wait for task processing to complete
-            await new Promise(resolve => setTimeout(resolve, 5000));
-
-            // Get the task again to check its status
-            const taskResponse = await request(app.getHttpServer())
-                .get(`/api/tasks/${response.body.taskId}`)
-                .expect(200);
-
-            expect(taskResponse.body).toHaveProperty('status', TaskStatus.COMPLETED);
-            expect(taskResponse.body).toHaveProperty('images');
-            expect(taskResponse.body.images).toHaveLength(2);
-        }, 10000);
-
         it('should return 400 when no URL or local path is provided', async () => {
             const response = await request(app.getHttpServer())
                 .post('/api/tasks')

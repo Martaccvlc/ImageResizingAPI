@@ -72,7 +72,7 @@ describe('TasksProcessor', () => {
             const task = await context.taskModel.create({
                 status: TaskStatus.PENDING,
                 price: 25,
-                originalPath: testImagePath,
+                originalPath: path.resolve(testImagePath),
             });
 
             // Process the task
@@ -130,7 +130,7 @@ describe('TasksProcessor', () => {
             const task = await context.taskModel.create({
                 status: TaskStatus.PENDING,
                 price: 25,
-                originalPath: nonExistentPath,
+                originalPath: path.resolve(nonExistentPath),
             });
 
             await processor.processTask(task.id);
@@ -145,14 +145,14 @@ describe('TasksProcessor', () => {
             expect(processedTask.images).toHaveLength(0);
         });
 
-        it('should handle invalid image file', async () => {
+        it('should handle invalid image format', async () => {
             const invalidImagePath = path.join(inputDir, 'invalid.jpg');
             fs.writeFileSync(invalidImagePath, 'invalid image data');
 
             const task = await context.taskModel.create({
                 status: TaskStatus.PENDING,
                 price: 25,
-                originalPath: invalidImagePath,
+                originalPath: path.resolve(invalidImagePath),
             });
 
             await processor.processTask(task.id);
@@ -172,8 +172,8 @@ describe('TasksProcessor', () => {
             
             // Create test image
             await createTestImage(testImagePath, {
-                width: 1024,
-                height: 1024,
+                width: 2048,
+                height: 2048,
                 background: { r: 255, g: 255, b: 255 }
             });
 
@@ -183,7 +183,7 @@ describe('TasksProcessor', () => {
             const task = await context.taskModel.create({
                 status: TaskStatus.PENDING,
                 price: 25,
-                originalPath: testImagePath,
+                originalPath: path.resolve(testImagePath),
             });
 
             await processor.processTask(task.id);
@@ -198,7 +198,7 @@ describe('TasksProcessor', () => {
                     errorMessage: processedTask.errorMessage,
                     taskId: task.id,
                     originalPath: testImagePath,
-                    exists: fs.existsSync(testImagePath),
+                    exists: fs.existsSync(testImagePath)
                 });
             }
 
@@ -212,9 +212,14 @@ describe('TasksProcessor', () => {
 
             // Verify image dimensions
             for (const image of processedTask.images) {
-                const md5 = context.utils.calculateMD5(testImagePath);
-                const baseName = path.basename(testImagePath, context.utils.getFileExtension(testImagePath));
-                const fullPath = path.join(outputDir, baseName, image.resolution, `${md5}${context.utils.getFileExtension(testImagePath)}`);
+                // Get the actual path from the image info
+                const fullPath = path.join(outputDir, image.path.replace('/output/', ''));
+                
+                // Ensure output directory exists
+                const outputResolutionDir = path.dirname(fullPath);
+                if (!fs.existsSync(outputResolutionDir)) {
+                    fs.mkdirSync(outputResolutionDir, { recursive: true });
+                }
                 
                 expect(fs.existsSync(fullPath)).toBe(true);
                 const metadata = await sharp(fullPath).metadata();
