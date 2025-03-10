@@ -18,12 +18,15 @@ const getWorkspaceRoot = () => {
     return process.cwd();
 };
 
-export function setupTestDirectories(): { testInputDir: string; testOutputDir: string } {
+export function setupTestDirectories(): {
+    testInputDir: string;
+    testOutputDir: string;
+} {
     const workspaceRoot = getWorkspaceRoot();
     console.log('Setting up test directories:', {
         workspaceRoot,
         cwd: process.cwd(),
-        dirname: __dirname
+        dirname: __dirname,
     });
 
     const testInputDir = path.join(workspaceRoot, 'test/test-input');
@@ -44,15 +47,21 @@ export function setupTestDirectories(): { testInputDir: string; testOutputDir: s
     // Create base directories with proper permissions
     try {
         // Create parent directories first
-        fs.mkdirSync(path.dirname(testInputDir), { recursive: true, mode: 0o775 });
-        fs.mkdirSync(path.dirname(testOutputDir), { recursive: true, mode: 0o775 });
+        fs.mkdirSync(path.dirname(testInputDir), {
+            recursive: true,
+            mode: 0o775,
+        });
+        fs.mkdirSync(path.dirname(testOutputDir), {
+            recursive: true,
+            mode: 0o775,
+        });
 
         // Create test directories
         fs.mkdirSync(testInputDir, { recursive: true, mode: 0o775 });
         fs.mkdirSync(testOutputDir, { recursive: true, mode: 0o775 });
 
         // Verify directories exist and have correct permissions
-        [testInputDir, testOutputDir].forEach(dir => {
+        [testInputDir, testOutputDir].forEach((dir) => {
             if (!fs.existsSync(dir)) {
                 throw new Error(`Failed to create directory: ${dir}`);
             }
@@ -66,7 +75,7 @@ export function setupTestDirectories(): { testInputDir: string; testOutputDir: s
             testInputDir,
             testOutputDir,
             inputExists: fs.existsSync(testInputDir),
-            outputExists: fs.existsSync(testOutputDir)
+            outputExists: fs.existsSync(testOutputDir),
         });
 
         return { testInputDir, testOutputDir };
@@ -96,8 +105,9 @@ export function cleanupTestDirectories(): void {
                 console.error('Failed to cleanup test directories:', error);
             }
             // Wait a bit before retrying
-            const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+            const wait = (ms: number) =>
+                new Promise((resolve) => setTimeout(resolve, ms));
             wait(100);
         }
     }
-} 
+}

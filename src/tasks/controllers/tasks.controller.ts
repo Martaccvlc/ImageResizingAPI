@@ -14,8 +14,11 @@ import { TasksService } from '../services/tasks.service';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
 import { HttpExceptionFilter } from '../../core/filters/httpExceptions.filters';
-import { taskInfoMessages, taskSwaggerSummaries, taskResponseErrorMessages } from '../../utils/constants/tasks/task-messages.constants';
-
+import {
+    taskInfoMessages,
+    taskSwaggerSummaries,
+    taskResponseErrorMessages,
+} from '../../utils/constants/tasks/task-messages.constants';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -55,7 +58,9 @@ export class TasksController {
     async findOne(@Param('taskId') taskId: string): Promise<TaskResponseDto> {
         const task = await this.tasksService.findOne(taskId);
         if (!task) {
-            throw new NotFoundException(`${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`);
+            throw new NotFoundException(
+                `${taskResponseErrorMessages.NOT_FOUND}: ${taskId}`,
+            );
         }
         return task;
     }

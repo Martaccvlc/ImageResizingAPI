@@ -5,7 +5,7 @@ const config: Config = {
     rootDir: '..',
     testMatch: [
         '<rootDir>/test/unit/**/*.spec.ts',
-        '<rootDir>/test/integration/**/*.spec.ts'
+        '<rootDir>/test/integration/**/*.spec.ts',
     ],
     transform: {
         '^.+\\.(t|j)s$': 'ts-jest',
@@ -16,7 +16,7 @@ const config: Config = {
     roots: ['<rootDir>/src/', '<rootDir>/test/'],
     moduleNameMapper: {
         '^src/(.*)$': '<rootDir>/src/$1',
-        '^@test/(.*)$': '<rootDir>/test/$1'
+        '^@test/(.*)$': '<rootDir>/test/$1',
     },
 };
 

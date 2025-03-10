@@ -7,7 +7,10 @@ import { TasksService } from '../../src/tasks/services/tasks.service';
 import { TasksProcessor } from '../../src/tasks/services/tasks.processor';
 import { Task } from '../../src/tasks/entities/task.entity';
 import { Image } from '../../src/tasks/entities/image.entity';
-import { calculateMD5, getFileExtension } from '../../src/utils/files/file.utils';
+import {
+    calculateMD5,
+    getFileExtension,
+} from '../../src/utils/files/file.utils';
 import { Types } from 'mongoose';
 
 export interface MockConfigService {
@@ -28,4 +31,4 @@ export interface TestContext {
         getFileExtension: typeof getFileExtension;
         generateObjectId: () => string;
     };
-} 
+}

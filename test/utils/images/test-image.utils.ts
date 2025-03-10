@@ -13,7 +13,10 @@ interface TestImageOptions {
     };
 }
 
-export async function createTestImage(outputPath: string, options: TestImageOptions): Promise<void> {
+export async function createTestImage(
+    outputPath: string,
+    options: TestImageOptions,
+): Promise<void> {
     const maxRetries = 3;
     let lastError: Error | null = null;
 
@@ -21,7 +24,7 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
         try {
             // Ensure absolute path
             const absolutePath = path.resolve(outputPath);
-            
+
             // Ensure the parent directory exists with proper permissions
             const parentDir = path.dirname(absolutePath);
             console.log('Setting up directory:', {
@@ -29,7 +32,7 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
                 exists: fs.existsSync(parentDir),
                 absolutePath,
                 originalPath: outputPath,
-                attempt: attempt + 1
+                attempt: attempt + 1,
             });
 
             // Create parent directory if it doesn't exist
@@ -37,7 +40,7 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
                 console.log('Creating parent directory');
                 fs.mkdirSync(parentDir, { recursive: true, mode: 0o775 });
                 // Wait for directory creation
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise((resolve) => setTimeout(resolve, 100));
             }
 
             // Remove existing file if it exists
@@ -45,7 +48,7 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
                 console.log('Removing existing file');
                 fs.unlinkSync(absolutePath);
                 // Wait for file deletion
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise((resolve) => setTimeout(resolve, 100));
             }
 
             // Ensure we have write permissions
@@ -54,14 +57,14 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
                 mode: stats.mode.toString(8),
                 uid: stats.uid,
                 gid: stats.gid,
-                attempt: attempt + 1
+                attempt: attempt + 1,
             });
 
             if ((stats.mode & 0o777) !== 0o775) {
                 console.log('Fixing directory permissions');
                 fs.chmodSync(parentDir, 0o775);
                 // Wait for permission change
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise((resolve) => setTimeout(resolve, 100));
             }
 
             // Create a solid color image
@@ -70,29 +73,33 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
                     width: options.width,
                     height: options.height,
                     channels: 3,
-                    background: options.background
-                }
+                    background: options.background,
+                },
             })
-            .jpeg({
-                quality: 90,
-                chromaSubsampling: '4:4:4'
-            })
-            .toBuffer();
+                .jpeg({
+                    quality: 90,
+                    chromaSubsampling: '4:4:4',
+                })
+                .toBuffer();
 
             // Write the buffer to file with retries
             for (let writeAttempt = 0; writeAttempt < 3; writeAttempt++) {
                 try {
-                    fs.writeFileSync(absolutePath, imageBuffer, { mode: 0o664 });
+                    fs.writeFileSync(absolutePath, imageBuffer, {
+                        mode: 0o664,
+                    });
                     break;
                 } catch (writeError) {
                     if (writeAttempt === 2) throw writeError;
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise((resolve) => setTimeout(resolve, 100));
                 }
             }
 
             // Verify the file was created
             if (!fs.existsSync(absolutePath)) {
-                throw new Error(`Failed to create test image at ${absolutePath}`);
+                throw new Error(
+                    `Failed to create test image at ${absolutePath}`,
+                );
             }
 
             // Ensure the file has proper permissions
@@ -106,30 +113,35 @@ export async function createTestImage(outputPath: string, options: TestImageOpti
                     size: finalStats.size,
                     mode: finalStats.mode.toString(8),
                     uid: finalStats.uid,
-                    gid: finalStats.gid
+                    gid: finalStats.gid,
                 },
-                attempt: attempt + 1
+                attempt: attempt + 1,
             });
 
             // Success - return early
             return;
         } catch (error) {
             lastError = error;
-            console.error('Failed to create test image (attempt ' + (attempt + 1) + '):', {
-                outputPath,
-                error: error.message,
-                stack: error.stack,
-                code: (error as any).code,
-                errno: (error as any).errno
-            });
-            
+            console.error(
+                'Failed to create test image (attempt ' + (attempt + 1) + '):',
+                {
+                    outputPath,
+                    error: error.message,
+                    stack: error.stack,
+                    code: (error as any).code,
+                    errno: (error as any).errno,
+                },
+            );
+
             // Wait before retry
             if (attempt < maxRetries - 1) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise((resolve) => setTimeout(resolve, 500));
             }
         }
     }
 
     // If we get here, all attempts failed
-    throw lastError || new Error('Failed to create test image after all retries');
-} 
+    throw (
+        lastError || new Error('Failed to create test image after all retries')
+    );
+}

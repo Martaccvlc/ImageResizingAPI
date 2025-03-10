@@ -3,10 +3,11 @@
  */
 export const fileErrorResponseMessages = {
     MALFORMED_URL: 'Malformed URL',
-    INVALID_FILE_EXT: 'The path must start with / and have a valid image extension',
+    INVALID_FILE_EXT:
+        'The path must start with / and have a valid image extension',
     FAILED_TO_PROCESS_IMAGE: 'Failed to process image',
-    FILE_NOT_FOUND: 'File not found'
-  };
+    FILE_NOT_FOUND: 'File not found',
+};
 
 /**
  * Provides summaries for the file for Swagger
@@ -27,6 +28,6 @@ export const fileExampleData = {
     LOCAL_PATH: '/input/sample.jpg',
     EXAMPLE_RESOLUTION: '1024',
     EXAMPLE_PRICE: 25.5,
-    EXAMPLE_FULL_OUTPUT_PATH: '/output/image1/1024/f322b730b287da77e1c519c7ffef4fc2.jpg',
+    EXAMPLE_FULL_OUTPUT_PATH:
+        '/output/image1/1024/f322b730b287da77e1c519c7ffef4fc2.jpg',
 };
-  

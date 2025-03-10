@@ -10,11 +10,20 @@ import { TasksProcessor } from '../../src/tasks/services/tasks.processor';
 import { Task } from '../../src/tasks/entities/task.entity';
 import { Image } from '../../src/tasks/entities/image.entity';
 import { TestContext } from '../types/test-context';
-import { calculateMD5, getFileExtension } from '../../src/utils/files/file.utils';
+import {
+    calculateMD5,
+    getFileExtension,
+} from '../../src/utils/files/file.utils';
 import { setupTestDatabase } from './database/test-database.utils';
-import { setupTestDirectories, cleanupTestDirectories } from './directories/test-directories.utils';
+import {
+    setupTestDirectories,
+    cleanupTestDirectories,
+} from './directories/test-directories.utils';
 
-export const setupTestModule = async (taskModel: Model<Task>, imageModel: Model<Image>): Promise<{
+export const setupTestModule = async (
+    taskModel: Model<Task>,
+    imageModel: Model<Image>,
+): Promise<{
     module: TestingModule;
     service: TasksService;
     configService: ConfigService;
@@ -60,13 +69,19 @@ export const setupTestModule = async (taskModel: Model<Task>, imageModel: Model<
     const service = module.get<TasksService>(TasksService);
     const tasksProcessor = module.get<TasksProcessor>(TasksProcessor);
 
-    return { module, service, configService: mockConfigService, tasksProcessor };
+    return {
+        module,
+        service,
+        configService: mockConfigService,
+        tasksProcessor,
+    };
 };
 
 export async function setupTestContext(): Promise<TestContext> {
     const { testInputDir, testOutputDir } = setupTestDirectories();
 
-    const { mongod, mongoConnection, taskModel, imageModel } = await setupTestDatabase();
+    const { mongod, mongoConnection, taskModel, imageModel } =
+        await setupTestDatabase();
 
     const mockConfigService = {
         get: jest.fn().mockImplementation((key: string) => {
@@ -135,4 +150,4 @@ export async function cleanupTestContext(context: TestContext): Promise<void> {
     await context.mongoConnection.close();
     await context.mongod.stop();
     cleanupTestDirectories();
-} 
+}

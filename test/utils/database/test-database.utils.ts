@@ -16,4 +16,4 @@ export const setupTestDatabase = async (): Promise<{
     const imageModel = mongoConnection.model<Image>(Image.name, ImageSchema);
 
     return { mongod, mongoConnection, taskModel, imageModel };
-}; 
+};

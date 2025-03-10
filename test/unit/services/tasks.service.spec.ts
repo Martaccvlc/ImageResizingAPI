@@ -7,20 +7,25 @@ import { fileErrorResponseMessages } from '../../../src/utils/constants/files/fi
 import { taskResponseErrorMessages } from '../../../src/utils/constants/tasks/task-messages.constants';
 import { TestContext } from '../../types/test-context';
 import { setupTestContext, cleanupTestContext } from '../../utils/common.utils';
-import { setupTestDirectories, cleanupTestDirectories } from '../../utils/directories/test-directories.utils';
+import {
+    setupTestDirectories,
+    cleanupTestDirectories,
+} from '../../utils/directories/test-directories.utils';
 import { createTestImage } from '../../utils/images/test-image.utils';
 
 // Mock the file utils module
 jest.mock('../../../src/utils/files/file.utils', () => ({
     calculateMD5: jest.fn().mockReturnValue('test-md5'),
     getFileExtension: jest.fn().mockReturnValue('.jpg'),
-    downloadImage: jest.fn().mockImplementation((url: string, outputPath: string) => {
-        if (url === 'https://example.com/image.jpg') {
-            fs.writeFileSync(outputPath, 'test data');
-            return outputPath;
-        }
-        throw new Error(taskResponseErrorMessages.ERROR_CREATING_TASK);
-    }),
+    downloadImage: jest
+        .fn()
+        .mockImplementation((url: string, outputPath: string) => {
+            if (url === 'https://example.com/image.jpg') {
+                fs.writeFileSync(outputPath, 'test data');
+                return outputPath;
+            }
+            throw new Error(taskResponseErrorMessages.ERROR_CREATING_TASK);
+        }),
     ensureDirectoryExists: jest.fn(),
 }));
 
@@ -53,7 +58,7 @@ describe('TasksService', () => {
             await createTestImage(testImagePath, {
                 width: 100,
                 height: 100,
-                background: { r: 255, g: 255, b: 255 }
+                background: { r: 255, g: 255, b: 255 },
             });
 
             const createTaskDto = {
@@ -114,7 +119,7 @@ describe('TasksService', () => {
             await createTestImage(testImagePath, {
                 width: 100,
                 height: 100,
-                background: { r: 255, g: 255, b: 255 }
+                background: { r: 255, g: 255, b: 255 },
             });
 
             const createTaskDto = {
@@ -130,9 +135,9 @@ describe('TasksService', () => {
 
         it('should throw NotFoundException when task is not found', async () => {
             const nonExistentId = context.utils.generateObjectId();
-            await expect(context.service.findOne(nonExistentId)).rejects.toThrow(
-                NotFoundException,
-            );
+            await expect(
+                context.service.findOne(nonExistentId),
+            ).rejects.toThrow(NotFoundException);
         });
 
         it('should throw NotFoundException when invalid ObjectId is provided', async () => {
@@ -149,7 +154,7 @@ describe('TasksService', () => {
             await createTestImage(testImagePath, {
                 width: 100,
                 height: 100,
-                background: { r: 255, g: 255, b: 255 }
+                background: { r: 255, g: 255, b: 255 },
             });
 
             // Create a task with FAILED status
@@ -164,10 +169,15 @@ describe('TasksService', () => {
             });
 
             // Update status to PENDING
-            await context.service.updateTaskStatus(createdTask.taskId, TaskStatus.PENDING);
+            await context.service.updateTaskStatus(
+                createdTask.taskId,
+                TaskStatus.PENDING,
+            );
 
             // Verify the update
-            const updatedTask = await context.taskModel.findById(createdTask.taskId);
+            const updatedTask = await context.taskModel.findById(
+                createdTask.taskId,
+            );
             if (!updatedTask) {
                 throw new Error('Task not found after update');
             }
@@ -179,7 +189,10 @@ describe('TasksService', () => {
         it('should throw NotFoundException when task is not found', async () => {
             const nonExistentId = context.utils.generateObjectId();
             await expect(
-                context.service.updateTaskStatus(nonExistentId, TaskStatus.PENDING),
+                context.service.updateTaskStatus(
+                    nonExistentId,
+                    TaskStatus.PENDING,
+                ),
             ).rejects.toThrow(NotFoundException);
         });
     });
