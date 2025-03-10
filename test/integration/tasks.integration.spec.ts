@@ -39,24 +39,24 @@ describe('Tasks Integration Tests', () => {
             const { testInputDir: inputDir, testOutputDir: outputDir } = setupTestDirectories();
             testInputDir = inputDir;
             testOutputDir = outputDir;
+
+            // Ensure directories exist and are empty
+            if (fs.existsSync(inputDir)) {
+                fs.rmSync(inputDir, { recursive: true, force: true });
+            }
+            if (fs.existsSync(outputDir)) {
+                fs.rmSync(outputDir, { recursive: true, force: true });
+            }
+            fs.mkdirSync(inputDir, { recursive: true, mode: 0o775 });
+            fs.mkdirSync(outputDir, { recursive: true, mode: 0o775 });
+
             console.log('Test directories setup completed:', {
                 inputDir,
                 outputDir,
                 inputExists: fs.existsSync(inputDir),
-                outputExists: fs.existsSync(outputDir)
-            });
-
-            // Create test image
-            const testImagePath = path.join(testInputDir, 'test-image.jpg');
-            await createTestImage(testImagePath, {
-                width: 2048,
-                height: 2048,
-                background: { r: 255, g: 255, b: 255 }
-            });
-            console.log('Initial test image created:', {
-                path: testImagePath,
-                exists: fs.existsSync(testImagePath),
-                stats: fs.existsSync(testImagePath) ? fs.statSync(testImagePath) : null
+                outputExists: fs.existsSync(outputDir),
+                inputMode: fs.statSync(inputDir).mode.toString(8),
+                outputMode: fs.statSync(outputDir).mode.toString(8)
             });
 
             // Create testing module
@@ -143,62 +143,34 @@ describe('Tasks Integration Tests', () => {
             testInputDir = inputDir;
             testOutputDir = outputDir;
 
-            // Ensure directories exist
-            expect(fs.existsSync(inputDir)).toBe(true);
-            expect(fs.existsSync(outputDir)).toBe(true);
+            // Clean directories
+            if (fs.existsSync(inputDir)) {
+                const files = fs.readdirSync(inputDir);
+                for (const file of files) {
+                    fs.unlinkSync(path.join(inputDir, file));
+                }
+            }
+            if (fs.existsSync(outputDir)) {
+                const files = fs.readdirSync(outputDir);
+                for (const file of files) {
+                    fs.unlinkSync(path.join(outputDir, file));
+                }
+            }
+
+            // Ensure directories exist with correct permissions
+            fs.mkdirSync(inputDir, { recursive: true, mode: 0o775 });
+            fs.mkdirSync(outputDir, { recursive: true, mode: 0o775 });
 
             console.log('Test directories reset:', {
                 inputDir,
                 outputDir,
                 inputExists: fs.existsSync(inputDir),
-                outputExists: fs.existsSync(outputDir)
+                outputExists: fs.existsSync(outputDir),
+                inputMode: fs.statSync(inputDir).mode.toString(8),
+                outputMode: fs.statSync(outputDir).mode.toString(8)
             });
 
-            // Create test image with retries
-            const testImagePath = path.join(testInputDir, 'test-image.jpg');
-            let imageCreated = false;
-            let attempts = 0;
-            const maxAttempts = 3;
-
-            while (!imageCreated && attempts < maxAttempts) {
-                try {
-                    await createTestImage(testImagePath, {
-                        width: 2048,
-                        height: 2048,
-                        background: { r: 255, g: 255, b: 255 }
-                    });
-
-                    // Wait for file creation to complete
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-
-                    if (fs.existsSync(testImagePath)) {
-                        const stats = fs.statSync(testImagePath);
-                        if (stats.size > 0) {
-                            imageCreated = true;
-                            console.log('Test image created successfully:', {
-                                path: testImagePath,
-                                size: stats.size,
-                                attempt: attempts + 1
-                            });
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Failed to create test image (attempt ${attempts + 1}):`, {
-                        error: error.message,
-                        path: testImagePath
-                    });
-                }
-                attempts++;
-                if (!imageCreated && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-
-            if (!imageCreated) {
-                throw new Error('Failed to create test image after multiple attempts');
-            }
-
-            // Wait for file system operations to complete
+            // Wait for directory operations to complete
             await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
             console.error('Test setup failed:', {
@@ -216,7 +188,56 @@ describe('Tasks Integration Tests', () => {
         try {
             // Wait for any pending operations to complete
             await new Promise(resolve => setTimeout(resolve, 2000));
-            console.log('Test cleanup completed');
+
+            // Clean up test files and directories
+            const cleanDirectory = (dirPath: string) => {
+                if (!fs.existsSync(dirPath)) return;
+
+                const entries = fs.readdirSync(dirPath);
+                for (const entry of entries) {
+                    const fullPath = path.join(dirPath, entry);
+                    const stats = fs.statSync(fullPath);
+
+                    if (stats.isDirectory()) {
+                        // Recursively clean subdirectory
+                        cleanDirectory(fullPath);
+                        // Remove empty directory
+                        try {
+                            fs.rmdirSync(fullPath);
+                            console.log(`Removed directory: ${fullPath}`);
+                        } catch (err) {
+                            console.warn(`Failed to remove directory ${fullPath}:`, err);
+                        }
+                    } else {
+                        // Remove file
+                        try {
+                            fs.unlinkSync(fullPath);
+                            console.log(`Removed file: ${fullPath}`);
+                        } catch (err) {
+                            console.warn(`Failed to delete file ${fullPath}:`, err);
+                        }
+                    }
+                }
+            };
+
+            // Clean input and output directories
+            if (fs.existsSync(testInputDir)) {
+                cleanDirectory(testInputDir);
+            }
+            if (fs.existsSync(testOutputDir)) {
+                cleanDirectory(testOutputDir);
+            }
+
+            // Recreate empty directories
+            fs.mkdirSync(testInputDir, { recursive: true, mode: 0o775 });
+            fs.mkdirSync(testOutputDir, { recursive: true, mode: 0o775 });
+
+            console.log('Test cleanup completed:', {
+                inputDirExists: fs.existsSync(testInputDir),
+                outputDirExists: fs.existsSync(testOutputDir),
+                inputFiles: fs.readdirSync(testInputDir),
+                outputFiles: fs.readdirSync(testOutputDir)
+            });
         } catch (error) {
             console.error('Test cleanup failed:', {
                 error: error.message,
@@ -230,8 +251,51 @@ describe('Tasks Integration Tests', () => {
     describe('POST /api/tasks', () => {
         it('should create a task with a local image', async () => {
             try {
-                const testImagePath = path.join(testInputDir, 'test-image.jpg');
+                const testImagePath = path.join(testInputDir, 'test-create-task.jpg');
                 
+                // Create test image with retries
+                let imageCreated = false;
+                let attempts = 0;
+                const maxAttempts = 3;
+
+                while (!imageCreated && attempts < maxAttempts) {
+                    try {
+                        await createTestImage(testImagePath, {
+                            width: 2048,
+                            height: 2048,
+                            background: { r: 255, g: 255, b: 255 }
+                        });
+
+                        // Wait for file creation to complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        if (fs.existsSync(testImagePath)) {
+                            const stats = fs.statSync(testImagePath);
+                            if (stats.size > 0) {
+                                imageCreated = true;
+                                console.log('Test image created successfully:', {
+                                    path: testImagePath,
+                                    size: stats.size,
+                                    attempt: attempts + 1
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Failed to create test image (attempt ${attempts + 1}):`, {
+                            error: error.message,
+                            path: testImagePath
+                        });
+                    }
+                    attempts++;
+                    if (!imageCreated && attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                if (!imageCreated) {
+                    throw new Error('Failed to create test image after multiple attempts');
+                }
+
                 // Verify test image exists before proceeding
                 expect(fs.existsSync(testImagePath)).toBe(true);
                 const imageStats = fs.statSync(testImagePath);
@@ -261,20 +325,21 @@ describe('Tasks Integration Tests', () => {
 
                 // Wait for task processing with retries
                 let finalStatus;
-                let attempts = 0;
-                const maxAttempts = 15;
-                const retryDelay = 1000;
+                let attempts2 = 0;
+                const maxAttempts2 = 15;
+                const retryDelay = 2000; // Increased delay
 
-                while (attempts < maxAttempts) {
+                while (attempts2 < maxAttempts2) {
                     const taskResponse = await request(app.getHttpServer())
                         .get(`/api/tasks/${taskId}`)
                         .expect(200);
 
                     finalStatus = taskResponse.body.status;
-                    console.log(`Task status check (attempt ${attempts + 1}):`, {
+                    console.log(`Task status check (attempt ${attempts2 + 1}):`, {
                         taskId,
                         status: finalStatus,
-                        imagesCount: taskResponse.body.images?.length || 0
+                        imagesCount: taskResponse.body.images?.length || 0,
+                        errorMessage: taskResponse.body.errorMessage
                     });
 
                     if (finalStatus === TaskStatus.COMPLETED) {
@@ -299,20 +364,26 @@ describe('Tasks Integration Tests', () => {
                         console.error('Task processing failed:', {
                             taskId,
                             error: taskResponse.body.errorMessage,
-                            attempt: attempts + 1
+                            attempt: attempts2 + 1,
+                            inputExists: fs.existsSync(testImagePath),
+                            inputStats: fs.existsSync(testImagePath) ? fs.statSync(testImagePath) : null,
+                            outputDirContents: fs.existsSync(testOutputDir) ? fs.readdirSync(testOutputDir) : null
                         });
                         throw new Error(`Task processing failed: ${taskResponse.body.errorMessage}`);
                     }
 
                     await new Promise(resolve => setTimeout(resolve, retryDelay));
-                    attempts++;
+                    attempts2++;
                 }
 
-                if (attempts >= maxAttempts) {
+                if (attempts2 >= maxAttempts2) {
                     console.error('Task processing timeout:', {
                         taskId,
-                        attempts,
-                        lastStatus: finalStatus
+                        attempts: attempts2,
+                        lastStatus: finalStatus,
+                        inputExists: fs.existsSync(testImagePath),
+                        inputStats: fs.existsSync(testImagePath) ? fs.statSync(testImagePath) : null,
+                        outputDirContents: fs.existsSync(testOutputDir) ? fs.readdirSync(testOutputDir) : null
                     });
                     throw new Error('Task processing timeout');
                 }
@@ -363,25 +434,95 @@ describe('Tasks Integration Tests', () => {
 
     describe('GET /api/tasks/:id', () => {
         it('should get a task by id', async () => {
-            // Create a task first
-            const createResponse = await request(app.getHttpServer())
-                .post('/api/tasks')
-                .send({
-                    localPath: path.join(testInputDir, 'test-image.jpg'),
-                })
-                .expect(201);
+            try {
+                // Create a test image first
+                const testImagePath = path.join(testInputDir, 'get-task-test.jpg');
+                
+                // Create test image with retries
+                let imageCreated = false;
+                let attempts = 0;
+                const maxAttempts = 3;
 
-            const taskId = createResponse.body.taskId;
+                while (!imageCreated && attempts < maxAttempts) {
+                    try {
+                        await createTestImage(testImagePath, {
+                            width: 2048,
+                            height: 2048,
+                            background: { r: 255, g: 255, b: 255 }
+                        });
 
-            // Get the task
-            const response = await request(app.getHttpServer())
-                .get(`/api/tasks/${taskId}`)
-                .expect(200);
+                        // Wait for file creation to complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
 
-            expect(response.body).toBeDefined();
-            expect(response.body.taskId).toBe(taskId);
-            expect(response.body.status).toBe(TaskStatus.PENDING);
-            expect(response.body.price).toBeDefined();
+                        if (fs.existsSync(testImagePath)) {
+                            const stats = fs.statSync(testImagePath);
+                            if (stats.size > 0) {
+                                imageCreated = true;
+                                console.log('Test image created successfully:', {
+                                    path: testImagePath,
+                                    size: stats.size,
+                                    attempt: attempts + 1
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Failed to create test image (attempt ${attempts + 1}):`, {
+                            error: error.message,
+                            path: testImagePath
+                        });
+                    }
+                    attempts++;
+                    if (!imageCreated && attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                if (!imageCreated) {
+                    throw new Error('Failed to create test image after multiple attempts');
+                }
+
+                // Verify test image exists before proceeding
+                expect(fs.existsSync(testImagePath)).toBe(true);
+                const imageStats = fs.statSync(testImagePath);
+                expect(imageStats.size).toBeGreaterThan(0);
+
+                console.log('Creating task with image:', {
+                    path: testImagePath,
+                    size: imageStats.size
+                });
+
+                // Create a task first
+                const createResponse = await request(app.getHttpServer())
+                    .post('/api/tasks')
+                    .send({
+                        localPath: testImagePath,
+                    })
+                    .expect(201);
+
+                const taskId = createResponse.body.taskId;
+                console.log('Task created:', {
+                    taskId,
+                    status: createResponse.body.status
+                });
+
+                // Get the task
+                const response = await request(app.getHttpServer())
+                    .get(`/api/tasks/${taskId}`)
+                    .expect(200);
+
+                expect(response.body).toBeDefined();
+                expect(response.body.taskId).toBe(taskId);
+                expect(response.body.status).toBe(TaskStatus.PENDING);
+                expect(response.body.price).toBeDefined();
+            } catch (error) {
+                console.error('Test failure:', {
+                    error: error.message,
+                    stack: error.stack,
+                    inputDirContents: fs.existsSync(testInputDir) ? fs.readdirSync(testInputDir) : null,
+                    outputDirContents: fs.existsSync(testOutputDir) ? fs.readdirSync(testOutputDir) : null
+                });
+                throw error;
+            }
         });
 
         it('should return 404 when task is not found', async () => {
