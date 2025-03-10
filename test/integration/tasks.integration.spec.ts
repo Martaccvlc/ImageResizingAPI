@@ -1,21 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Connection, connect, createConnection } from 'mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as path from 'path';
 import * as fs from 'fs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { setupTestContext, cleanupTestContext } from '../utils/common.utils';
-import { setupTestDirectories, cleanupTestDirectories } from '../utils/directories/test-directories.utils';
+import { setupTestDirectories } from '../utils/directories/test-directories.utils';
 import { createTestImage } from '../utils/images/test-image.utils';
 import * as Transport from 'winston-transport';
+import { TestContext } from '../types/test-context';
 
 import { AppModule } from '../../src/app.module';
-import { Task, TaskSchema } from '../../src/tasks/entities/task.entity';
-import { Image, ImageSchema } from '../../src/tasks/entities/image.entity';
 import { TaskStatus } from '../../src/utils/enums/tasks/task-status.enum';
 import { taskResponseErrorMessages } from '../../src/utils/constants/tasks/task-messages.constants';
 import { fileErrorResponseMessages } from '../../src/utils/constants/files/files-messages.constants';
@@ -29,30 +26,24 @@ class NullTransport extends Transport {
 
 describe('Tasks Integration Tests', () => {
     let app: INestApplication;
-    let mongod: MongoMemoryServer;
-    let mongoConnection: Connection;
-    let taskModel: any;
-    let imageModel: any;
-    let testContext: any;
-    let testDirs: any;
-    let testImagePath: string;
+    let context: TestContext;
+    let testInputDir: string;
+    let testOutputDir: string;
 
     beforeAll(async () => {
-        // Create test context and directories
-        testContext = await setupTestContext();
-        testDirs = setupTestDirectories();
+        // Setup test context first
+        context = await setupTestContext();
+        const { testInputDir: inputDir, testOutputDir: outputDir } = setupTestDirectories();
+        testInputDir = inputDir;
+        testOutputDir = outputDir;
 
         // Create test image
-        testImagePath = path.join(testDirs.testInputDir, 'test-image.jpg');
+        const testImagePath = path.join(testInputDir, 'test-image.jpg');
         await createTestImage(testImagePath, {
-            width: 100,
-            height: 100,
+            width: 2048,
+            height: 2048,
             background: { r: 255, g: 255, b: 255 }
         });
-
-        // Create MongoDB memory server
-        mongod = await MongoMemoryServer.create();
-        const uri = mongod.getUri();
 
         // Create testing module
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -62,16 +53,16 @@ describe('Tasks Integration Tests', () => {
                     load: [
                         () => ({
                             mongodb: {
-                                uri,
+                                uri: context.mongod.getUri(),
                             },
                             paths: {
-                                input: testDirs.testInputDir,
-                                output: testDirs.testOutputDir,
+                                input: testInputDir,
+                                output: testOutputDir,
                             },
                         }),
                     ],
                 }),
-                MongooseModule.forRoot(uri),
+                MongooseModule.forRoot(context.mongod.getUri()),
                 WinstonModule.forRoot({
                     transports: [
                         new NullTransport({
@@ -89,48 +80,45 @@ describe('Tasks Integration Tests', () => {
         app = moduleFixture.createNestApplication();
         app.setGlobalPrefix('api');
         await app.init();
-
-        // Connect to MongoDB
-        mongoConnection = await createConnection(uri);
-
-        // Get models
-        taskModel = mongoConnection.model<Task>(Task.name, TaskSchema);
-        imageModel = mongoConnection.model<Image>(Image.name, ImageSchema);
     }, 30000);
 
     afterAll(async () => {
-        // Clean up test directories
-        cleanupTestDirectories();
-
-        // Close connections
-        if (mongoConnection) {
-            await mongoConnection.close();
-        }
         if (app) {
             await app.close();
         }
-        if (mongod) {
-            await mongod.stop();
+        if (context) {
+            await cleanupTestContext(context);
         }
-        await cleanupTestContext(testContext);
     });
 
     beforeEach(async () => {
         // Clear database before each test
-        await taskModel.deleteMany({});
-        await imageModel.deleteMany({});
+        await context.taskModel.deleteMany({});
+        await context.imageModel.deleteMany({});
+
+        // Wait for any pending operations to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Reset test directories
-        cleanupTestDirectories();
-        testDirs = setupTestDirectories();
+        const { testInputDir: inputDir, testOutputDir: outputDir } = setupTestDirectories();
+        testInputDir = inputDir;
+        testOutputDir = outputDir;
 
         // Recreate test image
-        testImagePath = path.join(testDirs.testInputDir, 'test-image.jpg');
+        const testImagePath = path.join(testInputDir, 'test-image.jpg');
         await createTestImage(testImagePath, {
-            width: 100,
-            height: 100,
+            width: 2048,
+            height: 2048,
             background: { r: 255, g: 255, b: 255 }
         });
+
+        // Wait for file system operations to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+    });
+
+    afterEach(async () => {
+        // Wait for any pending operations to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
     });
 
     describe('POST /api/tasks', () => {
@@ -138,7 +126,7 @@ describe('Tasks Integration Tests', () => {
             const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: testImagePath,
+                    localPath: path.join(testInputDir, 'test-image.jpg'),
                 })
                 .expect(201);
 
@@ -172,11 +160,11 @@ describe('Tasks Integration Tests', () => {
             const response = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: path.join(testDirs.testInputDir, 'non-existent.jpg'),
+                    localPath: path.join(testInputDir, 'non-existent.jpg'),
                 })
                 .expect(404);
 
-            expect(response.body.message).toBe(`${fileErrorResponseMessages.FILE_NOT_FOUND}: ${path.join(testDirs.testInputDir, 'non-existent.jpg')}`);
+            expect(response.body.message).toBe(`${fileErrorResponseMessages.FILE_NOT_FOUND}: ${path.join(testInputDir, 'non-existent.jpg')}`);
         });
 
         it('should return 400 when URL is invalid', async () => {
@@ -197,7 +185,7 @@ describe('Tasks Integration Tests', () => {
             const createResponse = await request(app.getHttpServer())
                 .post('/api/tasks')
                 .send({
-                    localPath: testImagePath,
+                    localPath: path.join(testInputDir, 'test-image.jpg'),
                 })
                 .expect(201);
 
@@ -228,10 +216,10 @@ describe('Tasks Integration Tests', () => {
     describe('Task Processing Flow', () => {
         it('should complete the full task processing flow', async () => {
             // Create a valid test image
-            const sampleImagePath = path.join(testDirs.testInputDir, 'flow-test.jpg');
+            const sampleImagePath = path.join(testInputDir, 'flow-test.jpg');
             await createTestImage(sampleImagePath, {
-                width: 100,
-                height: 100,
+                width: 2048,
+                height: 2048,
                 background: { r: 255, g: 255, b: 255 }
             });
 
@@ -278,7 +266,7 @@ describe('Tasks Integration Tests', () => {
         });
 
         it('should handle invalid image processing', async () => {
-            const invalidImagePath = path.join(testDirs.testInputDir, 'invalid.jpg');
+            const invalidImagePath = path.join(testInputDir, 'invalid.jpg');
             fs.writeFileSync(invalidImagePath, 'invalid image data');
 
             const createResponse = await request(app.getHttpServer())

@@ -30,37 +30,50 @@ export function setupTestDirectories(): { testInputDir: string; testOutputDir: s
     const testOutputDir = path.join(workspaceRoot, 'test/test-output');
 
     // Clean up existing directories first
-    cleanupTestDirectories();
+    try {
+        if (fs.existsSync(testInputDir)) {
+            fs.rmSync(testInputDir, { recursive: true, force: true });
+        }
+        if (fs.existsSync(testOutputDir)) {
+            fs.rmSync(testOutputDir, { recursive: true, force: true });
+        }
+    } catch (error) {
+        console.error('Error cleaning up directories:', error);
+    }
 
     // Create base directories with proper permissions
-    fs.mkdirSync(testInputDir, { recursive: true, mode: 0o775 });
-    fs.mkdirSync(testOutputDir, { recursive: true, mode: 0o775 });
+    try {
+        // Create parent directories first
+        fs.mkdirSync(path.dirname(testInputDir), { recursive: true, mode: 0o775 });
+        fs.mkdirSync(path.dirname(testOutputDir), { recursive: true, mode: 0o775 });
 
-    // Create resolution directories
-    ['800', '1024'].forEach(resolution => {
-        const resolutionDir = path.join(testOutputDir, resolution);
-        fs.mkdirSync(resolutionDir, { recursive: true, mode: 0o775 });
-    });
+        // Create test directories
+        fs.mkdirSync(testInputDir, { recursive: true, mode: 0o775 });
+        fs.mkdirSync(testOutputDir, { recursive: true, mode: 0o775 });
 
-    // Verify directories exist and have correct permissions
-    [testInputDir, testOutputDir].forEach(dir => {
-        if (!fs.existsSync(dir)) {
-            throw new Error(`Failed to create directory: ${dir}`);
-        }
-        const stats = fs.statSync(dir);
-        if ((stats.mode & 0o777) !== 0o775) {
-            fs.chmodSync(dir, 0o775);
-        }
-    });
+        // Verify directories exist and have correct permissions
+        [testInputDir, testOutputDir].forEach(dir => {
+            if (!fs.existsSync(dir)) {
+                throw new Error(`Failed to create directory: ${dir}`);
+            }
+            const stats = fs.statSync(dir);
+            if ((stats.mode & 0o777) !== 0o775) {
+                fs.chmodSync(dir, 0o775);
+            }
+        });
 
-    console.log('Test directories created:', {
-        testInputDir,
-        testOutputDir,
-        inputExists: fs.existsSync(testInputDir),
-        outputExists: fs.existsSync(testOutputDir)
-    });
+        console.log('Test directories created:', {
+            testInputDir,
+            testOutputDir,
+            inputExists: fs.existsSync(testInputDir),
+            outputExists: fs.existsSync(testOutputDir)
+        });
 
-    return { testInputDir, testOutputDir };
+        return { testInputDir, testOutputDir };
+    } catch (error) {
+        console.error('Error creating test directories:', error);
+        throw error;
+    }
 }
 
 export function cleanupTestDirectories(): void {
