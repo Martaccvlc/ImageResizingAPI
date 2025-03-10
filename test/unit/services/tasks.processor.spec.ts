@@ -18,29 +18,89 @@ describe('TasksProcessor', () => {
     let outputDir: string;
 
     beforeAll(async () => {
-        context = await setupTestContext();
-        processor = context.tasksProcessor;
-        const testDirs = setupTestDirectories();
-        inputDir = testDirs.testInputDir;
-        outputDir = testDirs.testOutputDir;
+        try {
+            context = await setupTestContext();
+            processor = context.tasksProcessor;
+            const testDirs = setupTestDirectories();
+            inputDir = testDirs.testInputDir;
+            outputDir = testDirs.testOutputDir;
+
+            // Ensure directories exist
+            expect(fs.existsSync(inputDir)).toBe(true);
+            expect(fs.existsSync(outputDir)).toBe(true);
+            
+            console.log('Test setup completed:', {
+                inputDir,
+                outputDir,
+                inputExists: fs.existsSync(inputDir),
+                outputExists: fs.existsSync(outputDir)
+            });
+        } catch (error) {
+            console.error('beforeAll setup failed:', {
+                error: error.message,
+                stack: error.stack,
+                inputDir,
+                outputDir
+            });
+            throw error;
+        }
     });
 
     afterAll(async () => {
-        await cleanupTestContext(context);
+        try {
+            await cleanupTestContext(context);
+            console.log('Test cleanup completed');
+        } catch (error) {
+            console.error('afterAll cleanup failed:', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
     });
 
     beforeEach(async () => {
-        const testDirs = setupTestDirectories();
-        inputDir = testDirs.testInputDir;
-        outputDir = testDirs.testOutputDir;
+        try {
+            const testDirs = setupTestDirectories();
+            inputDir = testDirs.testInputDir;
+            outputDir = testDirs.testOutputDir;
 
-        // Wait for directory setup to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+            // Ensure directories exist
+            expect(fs.existsSync(inputDir)).toBe(true);
+            expect(fs.existsSync(outputDir)).toBe(true);
+
+            // Wait for directory setup to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            console.log('Test directories setup:', {
+                inputDir,
+                outputDir,
+                inputExists: fs.existsSync(inputDir),
+                outputExists: fs.existsSync(outputDir)
+            });
+        } catch (error) {
+            console.error('beforeEach setup failed:', {
+                error: error.message,
+                stack: error.stack,
+                inputDir,
+                outputDir
+            });
+            throw error;
+        }
     });
 
     afterEach(async () => {
-        // Wait for any pending operations to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            // Wait for any pending operations to complete
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log('Test cleanup completed');
+        } catch (error) {
+            console.error('afterEach cleanup failed:', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
     });
 
     it('should be defined', () => {
@@ -51,69 +111,128 @@ describe('TasksProcessor', () => {
         it('should process an image successfully', async () => {
             const testImagePath = path.join(inputDir, 'test.jpg');
             
-            console.log('Test image path:', testImagePath);
-            console.log('Input directory exists:', fs.existsSync(inputDir));
-            console.log('Parent directory exists:', fs.existsSync(path.dirname(testImagePath)));
-            
-            // Create test image
-            await createTestImage(testImagePath, {
-                width: 2048,
-                height: 2048,
-                background: { r: 255, g: 255, b: 255 }
-            });
-
-            // Wait for file creation to complete
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            console.log('After createTestImage');
-            console.log('Test image exists:', fs.existsSync(testImagePath));
-            console.log('Input directory exists:', fs.existsSync(inputDir));
-            console.log('Parent directory exists:', fs.existsSync(path.dirname(testImagePath)));
-
-            // Ensure the test image exists
-            expect(fs.existsSync(testImagePath)).toBe(true);
-
-            // Create task with the test image
-            const task = await context.taskModel.create({
-                status: TaskStatus.PENDING,
-                price: 25,
-                originalPath: testImagePath,
-            });
-
-            // Process the task
-            await processor.processTask(task.id);
-
-            // Wait for processing to complete
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Verify the task was processed
-            const processedTask = await context.taskModel.findById(task.id);
-            if (!processedTask) {
-                throw new Error('Task not found after processing');
-            }
-
-            if (processedTask.status === TaskStatus.FAILED) {
-                console.error('Task processing failed:', {
-                    errorMessage: processedTask.errorMessage,
-                    taskId: task.id,
-                    originalPath: testImagePath,
-                    exists: fs.existsSync(testImagePath),
-                    stats: fs.existsSync(testImagePath) ? fs.statSync(testImagePath) : null,
-                    outputDir: fs.existsSync(outputDir) ? fs.readdirSync(outputDir) : null
+            try {
+                console.log('Starting image processing test:', {
+                    testImagePath,
+                    inputDirExists: fs.existsSync(inputDir),
+                    parentDirExists: fs.existsSync(path.dirname(testImagePath))
                 });
+                
+                // Create test image with retries
+                let imageCreated = false;
+                let attempts = 0;
+                const maxAttempts = 3;
+
+                while (!imageCreated && attempts < maxAttempts) {
+                    try {
+                        await createTestImage(testImagePath, {
+                            width: 2048,
+                            height: 2048,
+                            background: { r: 255, g: 255, b: 255 }
+                        });
+
+                        // Wait for file creation to complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        if (fs.existsSync(testImagePath)) {
+                            imageCreated = true;
+                            console.log('Test image created successfully:', {
+                                path: testImagePath,
+                                size: fs.statSync(testImagePath).size,
+                                attempt: attempts + 1
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Failed to create test image (attempt ${attempts + 1}):`, {
+                            error: error.message,
+                            path: testImagePath
+                        });
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                }
+
+                if (!imageCreated) {
+                    throw new Error('Failed to create test image after multiple attempts');
+                }
+
+                // Ensure the test image exists
+                expect(fs.existsSync(testImagePath)).toBe(true);
+                const imageStats = fs.statSync(testImagePath);
+                expect(imageStats.size).toBeGreaterThan(0);
+
+                // Create task with the test image
+                const task = await context.taskModel.create({
+                    status: TaskStatus.PENDING,
+                    price: 25,
+                    originalPath: testImagePath,
+                });
+
+                console.log('Task created:', {
+                    taskId: task.id,
+                    status: task.status,
+                    originalPath: task.originalPath
+                });
+
+                // Process the task
+                await processor.processTask(task.id);
+
+                // Wait for processing to complete with increased timeout
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Verify the task was processed
+                const processedTask = await context.taskModel.findById(task.id);
+                if (!processedTask) {
+                    throw new Error('Task not found after processing');
+                }
+
+                if (processedTask.status === TaskStatus.FAILED) {
+                    console.error('Task processing failed:', {
+                        errorMessage: processedTask.errorMessage,
+                        taskId: task.id,
+                        originalPath: testImagePath,
+                        exists: fs.existsSync(testImagePath),
+                        stats: fs.existsSync(testImagePath) ? fs.statSync(testImagePath) : null,
+                        outputDirContents: fs.existsSync(outputDir) ? fs.readdirSync(outputDir) : null
+                    });
+                    throw new Error(`Task processing failed: ${processedTask.errorMessage}`);
+                }
+
+                // Verify task status and images
+                expect(processedTask.status).toBe(TaskStatus.COMPLETED);
+                expect(processedTask.images).toHaveLength(fileData.FILE_RESOLUTION.length);
+
+                // Verify each processed image
+                for (const image of processedTask.images) {
+                    expect(image.resolution).toBeDefined();
+                    expect(image.path).toBeDefined();
+                    expect(fileData.FILE_RESOLUTION).toContain(image.resolution);
+
+                    const processedImagePath = path.join(outputDir, image.path.replace('/output/', ''));
+                    console.log('Verifying processed image:', {
+                        resolution: image.resolution,
+                        path: processedImagePath,
+                        exists: fs.existsSync(processedImagePath)
+                    });
+
+                    expect(fs.existsSync(processedImagePath)).toBe(true);
+                    const processedImageStats = fs.statSync(processedImagePath);
+                    expect(processedImageStats.size).toBeGreaterThan(0);
+                }
+            } catch (error) {
+                console.error('Test failure:', {
+                    error: error.message,
+                    stack: error.stack,
+                    testImageExists: fs.existsSync(testImagePath),
+                    testImageStats: fs.existsSync(testImagePath) ? fs.statSync(testImagePath) : null,
+                    inputDirContents: fs.existsSync(inputDir) ? fs.readdirSync(inputDir) : null,
+                    outputDirContents: fs.existsSync(outputDir) ? fs.readdirSync(outputDir) : null
+                });
+                throw error;
             }
-
-            // Verify task status and images
-            expect(processedTask.status).toBe(TaskStatus.COMPLETED);
-            expect(processedTask.images).toHaveLength(fileData.FILE_RESOLUTION.length);
-
-            // Verify each resolution
-            processedTask.images.forEach(image => {
-                expect(image.resolution).toBeDefined();
-                expect(image.path).toBeDefined();
-                expect(fileData.FILE_RESOLUTION).toContain(image.resolution);
-            });
-        });
+        }, 30000);
 
         it('should handle non-existent task', async () => {
             const nonExistentId = context.utils.generateObjectId();
